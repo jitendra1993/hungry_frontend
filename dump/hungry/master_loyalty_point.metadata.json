@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"2c5223d31fd545cfb9540f94b59985cc","collectionName":"master_loyalty_point","type":"collection"}

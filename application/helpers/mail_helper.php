@@ -108,68 +108,77 @@ require 'vendor/autoload.php';
 		return $rr;
 	}
 
-	function changeUserStatusMail($user_id,$status)
-	{
+	function changeUserStatusMail($user_id,$status){
+
 		$CI =& get_instance();
-		$sql = "SELECT u.name,u.email FROM user_master u  WHERE u.id='$user_id'";
-		$result = $CI->db->query($sql);
-		$data =  $result->row_array();//second option
+		$CI->load->library('mongoci');
+		$db = $CI->mongoci->db;
+
+		$cond = array('hash'=> $user_id);
+		$projection = array("_id" => 0,'name'=> TRUE,'email'=>TRUE);
+		$user_info = $db->user_master->findOne($cond,array('projection' =>$projection));
+		$data = (array) $user_info;
 		
 		$name = $data['name'];
 		$to = $data['email'];
 		$status_text = ($status==1)?'Activated':'De-activated';
 
 		$subject = 'Account status - '.$status_text;
-		$message = "Dear $name,<br><br>Your account has been $status_text by admin.<br>
-					<br><br>
-					for any type of clarification and support please feel free to reach to us.";
+		$message = "Dear $name,<br><br>Your account has been $status_text by admin.<br><br><br>for any type of clarification and support please feel free to reach to us.";
 		sendMail($to,$name,$subject,$message,0);
 		
 	}
 
-function changePasswordMail($user_id){
+	function changePasswordMail($user_id){
 
-	$this->load->library('mongoci');
-	$db = $this->mongoci->db;
-	
 		$CI =& get_instance();
-		$sql = "SELECT u.name,u.email FROM user_master u  WHERE u.id='$user_id'";
-		$result = $CI->db->query($sql);
-		$data =  $result->row_array();//second option
+		$CI->load->library('mongoci');
+		$db = $CI->mongoci->db;
+
+		$cond = array('hash'=> $user_id);
+		$projection = array("_id" => 0,'name'=> TRUE,'email'=>TRUE);
+		$user_info = $db->user_master->findOne($cond,array('projection' =>$projection));
+		$data = (array) $user_info;
+		
 		$name = $data['name'];
 		$to = $data['email'];
-
+		
 		$subject = 'Password Changed';
-		$message = "Dear $name,<br><br>Your password has been successfully changed.
-					<br><br>for any type of clarification and support please feel free to reach to us.";
-			sendMail($to,$name,$subject,$message,0);
+		$message = "Dear $name,<br><br>Your password has been successfully changed.<br><br>for any type of clarification and support please feel free to reach to us.";
+		sendMail($to,$name,$subject,$message,0);
 		
 	}
 	
 	function forgotPasswordMailSend($email,$message){
 		$CI =& get_instance();
-		$sql = "SELECT u.name,u.email FROM user_master u  WHERE u.email='$email'";
-		$result = $CI->db->query($sql);
-		$data =  $result->row_array();//second option
+		$CI->load->library('mongoci');
+		$db = $CI->mongoci->db;
+
+		$cond = array('email'=> $email);
+		$projection = array("_id" => 0,'name'=> TRUE,'email'=>TRUE);
+		$user_info = $db->user_master->findOne($cond,array('projection' =>$projection));
+		$data = (array) $user_info;
 		$name = $data['name'];
 		$to = $data['email'];
 		$subject = 'Reset password Link';
 		sendMail($to,$name,$subject,$message,0);
 	}
 	
-	function resetPasswordMail($email)
-	{
+	function resetPasswordMail($email){
+
 		$CI =& get_instance();
-		$sql = "SELECT u.name,u.email FROM user_master u  WHERE u.email='$email'";
-		$result = $CI->db->query($sql);
-		$data =  $result->row_array();//second option
+		$CI->load->library('mongoci');
+		$db = $CI->mongoci->db;
+
+		$cond = array('email'=> $email);
+		$projection = array("_id" => 0,'name'=> TRUE,'email'=>TRUE);
+		$user_info = $db->user_master->findOne($cond,array('projection' =>$projection));
+		$data = (array) $user_info;
 		$name = $data['name'];
 		$to = $data['email'];
-
 		$subject = 'Password Reset';
-		$message = "Dear $name,<br><br>Your password has been successfully reset. Please login with new password.
-					<br><br>for any type of clarification and support please feel free to reach to us.";
-			sendMail($to,$name,$subject,$message,0);
+		$message = "Dear $name,<br><br>Your password has been successfully reset. Please login with new password.<br><br>for any type of clarification and support please feel free to reach to us.";
+		sendMail($to,$name,$subject,$message,0);
 		
 	}
 	
@@ -191,8 +200,7 @@ function changePasswordMail($user_id){
 		sendMail($to,$name,$subject,$msg,1);
 	}
 	
-	function tableBookingConfirm($data)
-	{
+	function tableBookingConfirm($data){
 		$name = $data['name'];
 		$to = $data['email'];
 		$status = $data['status'];
