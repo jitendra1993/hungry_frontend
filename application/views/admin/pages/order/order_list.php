@@ -152,6 +152,7 @@
 							}else if($order->order_type==2)
 							{
 								$order_type = 'Delivery';
+								
 							}else if($order->order_type==3)
 							{
 								$order_type = 'Dinein';
@@ -172,11 +173,11 @@
 									<?php 
 									if($order->settled==0 && $this->session->userdata('role_master_tbl_id')==2){ ?>
 										<a href="javascript:void(0)" id="order_id_status_<?php echo $order->order_id;?>"
-											data-id="<?php echo $order->order_id;?>" current-status="<?php echo $st;?>"
-											class="badge badge-secondary change-order-status" data-toggle="tooltip"
+											data-id="<?php echo $order->order_id;?>" user-id="<?=$order->user_id?>"  current-status="<?php echo $st;?>"
+											class="badge badge-secondary change-order-status" data-order-type="<?php echo $order->order_type;?>" data-toggle="tooltip"
 											data-placement="top" title="Change Status"><i class="fa fa-pencil"></i></a>
 										<?php 
-									} ?>
+									}  ?>
 									<a href="javascript:void(0)" data-id="<?=$order->order_id?>" user-id="<?=$order->user_id?>" restaurant-id="<?=$order->restaurant_id?>" 
 										class="badge badge-secondary view-order" data-toggle="tooltip" data-placement="top"
 										title="View"><i class="fa fa-eye"></i></a>
@@ -194,8 +195,7 @@
     </div>
  </div>
 
-
-<div class="modal" id="changeStatusModal" data-backdrop="static" data-keyboard="false" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+ <div class="modal" id="changeStatusModal" data-backdrop="static" data-keyboard="false" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -204,7 +204,9 @@
             </div>
             <div class="modal-body">
                  <div class="form-box">
-                     <input type='hidden' name='order_id' id="order_id" value=''>
+                    <input type='hidden' name='order_id' id="order_id" value=''>
+					<input type='hidden' name='user_id' id="user_id" value=''>
+					<input type='hidden' name='order_type' id="order_type" value=''>
                      <div class="col-md-12 form-group">
                          <select name="new_status" id="new_status" class="form-control">
 							<option value="" selected>Select Status</option>
@@ -215,18 +217,47 @@
 							?>
                          </select>
                          <span class="error has-danger new_status_error"></span>
-                     </div>
+                    </div>
+					
+					<div class="col-md-12 form-group toggleTime">
+						<input type='text' name='delivery_time' id="delivery_time" value="<?php echo date('h:m A',time()); ?>" class="form-control time-picker">
+					</div>
 
-                     <div class="col-md-12 form-group">
-                         <textarea name="order_remark" id="order_remark" class='form-control' placeholder="Remark"
-                             rows=2 style="height:60px"></textarea>
-                     </div>
+					<div class="col-md-12 form-group">
+						<select name="driver[]" name="driver" id="driver" class="form-control driverDropdown  selectpicker" multiple style="display:none">
+							<option value="" disabled>Select Driver</option>
+							<?php 
+							//is_free-> 0 occupied,1 free,2 pending order or partial occupied
+							foreach($driver as $singleDriver){
+								$occupied ='';
+								$disabled ='';
+								$driver_pending_order = count($singleDriver->driver_order);
+								if($singleDriver->is_free==0){
+									$occupied =' (Occupied)';
+									$disabled ='disabled';
 
-                     <br>
-                     <div class="search-icon">
-                         <button type="button" class="btn btn-success submitStatus">Submit</button>
-                         <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-                     </div>
+								}else if($singleDriver->is_free==1){
+									$occupied ='';
+									$disabled ='';
+
+								}else if($singleDriver->is_free==2){
+									$occupied =' (Pending Orders-'.$driver_pending_order .')';
+									$disabled ='';
+								}
+								echo '<option value="'. $singleDriver->hash.'"'.$disabled.'>'. $singleDriver->name.''.$occupied.'</option>';
+							}
+							?>
+						</select>
+					</div>
+
+                    <div class="col-md-12 form-group">
+                        <textarea name="order_remark" id="order_remark" class='form-control' placeholder="Remark" rows=2 style="height:60px"></textarea>
+                    </div>
+                    <br>
+                    <div class="search-icon">
+                        <button type="button" class="btn btn-success submitStatus">Submit</button>
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                    </div>
                  </div>
              </div>
         </div>

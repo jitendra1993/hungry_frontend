@@ -250,7 +250,7 @@ class Order_model extends CI_Model{
 				)
 			),
 			$match,
-			array('$project' =>['_id'=>0,'order_id'=>1,'restaurant_id'=>1,'user_id'=>1,'order_type'=>1,'payment_type'=>1,'address_id'=>1,'platform'=>1,'delivery_time'=>1,'total_item'=>1,'discount'=>1,'driver_status'=>1,'status'=>1,'service_charge'=>1,'sub_total'=>1,'grand_total'=>1,'payment_status'=>1,'added_date_timestamp'=>1,'guest_name'=>1,'guest_email'=>1,'guest_phone'=>1,'settled'=>1,'m.user_hash_id'=>1,'m.merchant_name'=>1,'m.merchant_phone'=>1,'m.contact_name'=>1,'m.contact_phone'=>1,'m.contact_email'=>1,'u.name'=>1,'u.email'=>1,'u.mobile'=>1,'product.id'=>1,'product.item_name'=>1]),
+			array('$project' =>['_id'=>0,'order_id'=>1,'restaurant_id'=>1,'user_id'=>1,'order_type'=>1,'payment_type'=>1,'address_id'=>1,'platform'=>1,'delivery_time'=>1,'total_item'=>1,'discount'=>1,'driver_status'=>1,'driver_id'=>1,'status'=>1,'service_charge'=>1,'sub_total'=>1,'grand_total'=>1,'payment_status'=>1,'added_date_timestamp'=>1,'guest_name'=>1,'guest_email'=>1,'guest_phone'=>1,'settled'=>1,'m.user_hash_id'=>1,'m.merchant_name'=>1,'m.merchant_phone'=>1,'m.contact_name'=>1,'m.contact_phone'=>1,'m.contact_email'=>1,'u.name'=>1,'u.email'=>1,'u.mobile'=>1,'product.id'=>1,'product.item_name'=>1]),
 			['$sort' => ['added_date_timestamp' => -1]],
 			['$skip' =>  $data['start']],
 			
@@ -275,6 +275,12 @@ class Order_model extends CI_Model{
 	public function updateOrder($data,$id){
 		$cond = array('order_id'=>$id);
 		$this->db->master_order_tbl->updateOne($cond,array('$set'=>$data),array("multi"=>false));
+		return true;
+	}
+
+	public function updateDriverFreeStatus($data,$id){
+		$cond = array('hash'=>array('$in'=>$id));
+		$this->db->user_master->updateMany($cond,array('$set'=>$data));
 		return true;
 	}
 
@@ -458,6 +464,120 @@ class Order_model extends CI_Model{
 		$cond['restaurant_id']=$user_id;
 		$this->db->master_order_tbl->updateMany($cond,array('$set'=>$data));
 		echo 1;
+	}
+
+	public function getDriver(){
+
+		$match = [];
+		$match['$match']['status']=array('$nin'=>array(2));
+		$match['$match']['role_master_tbl_id']=array('$in'=>array(3));
+		$match['$match']['is_online']=1;
+
+		if ($this->session->userdata('role_master_tbl_id')==2) {
+			$adminDetail = $this->fetchAdminId();
+			$user_id = $this->session->userdata('user_id');
+			$match['$match']['role_master_tbl_id']=array('$in'=>array(3));
+			$match['$match']['added_by_id']=array('$in'=>array($user_id,$adminDetail->hash));
+		}
+
+		$ops = array(
+			array(
+				'$lookup' => array(
+					"from" => "master_driver_order",
+					"localField" => "hash",// filed in matched collection
+					"foreignField" => "driver_user_id", //filedin current collection
+					'pipeline' => [
+									['$match'=> ["order_assigned"=>0]],
+									['$project' => ['_id'=>0,'hash'=>1]]
+								],
+					"as" => "driver_order"
+				)
+			),
+			$match,
+			array('$project' =>[
+				'_id'=>0,
+				'hash'=>1,
+				'name'=>1,
+				'status'=>1,
+				'is_online'=>1,
+				'is_free'=>1,
+				'driver_order'=>'$driver_order'
+				]
+			),
+			['$sort' => ['name' => 1]]
+		);
+		
+		$results = $this->db->user_master->aggregate($ops);
+		$rr = [];
+		foreach($results as $result) {
+			$rr[] = $result;
+		}
+		// echo '<pre>';
+		// print_r($rr);
+		// echo '</pre>';
+		// die;
+		return $rr;
+		
+	}
+
+	public function fetchAdminId(){
+		$results = $this->db->user_master->findOne(array('role_master_tbl_id'=>1),array('projection' =>['_id'=>0,'hash'=>1]));
+		return (Object)$results;
+	}
+
+	public function addOrderForDriver($data){
+		$this->db->master_driver_order->insertOne($data);
+		return true;
+	}
+
+	public function checkOrderInvitaion($order_id){
+		$results = $this->db->master_driver_order->find(array('order_id'=>$order_id),array('projection' =>['_id'=>0,'driver_user_id'=>1]));
+		$rr = [];
+		foreach($results as $result) {
+			$rr[] = $result;
+		}
+		return $rr;
+	}
+
+	public function getOrderInvitedDriverDetail($order_id){
+
+		$match = [];
+		$match['$match']['status']=array('$nin'=>array(2));
+		$match['$match']['role_master_tbl_id']=array('$in'=>array(3));
+
+		$ops = array(
+			array(
+				'$lookup' => array(
+					"from" => "master_driver_order",
+					"localField" => "hash",// filed in matched collection
+					"foreignField" => "driver_user_id", //filedin current collection
+					'pipeline' => [
+									['$match'=> ["order_id"=>$order_id]],
+									['$project' => ['_id'=>0,'hash'=>1]]
+								],
+					"as" => "driver_order"
+				)
+			),
+			array('$unwind'=>'$driver_order'),
+			$match,
+			array('$project' =>[
+				'_id'=>0,
+				'name'=>1,
+				'mobile'=>1,
+				'order_id'=>'$driver_order.order_id'
+				]
+			),
+			['$sort' => ['name' => 1]]
+		);
+		
+		$results = $this->db->user_master->aggregate($ops);
+		$rr = [];
+		foreach($results as $result) {
+			$rr[] = $result;
+		}
+		
+		return $rr;
+		
 	}
 		
 }

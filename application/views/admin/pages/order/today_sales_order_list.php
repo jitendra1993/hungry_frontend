@@ -150,6 +150,9 @@
 				<tbody>
 					<?php 
 					if(isset($orders) && count($orders)>0){
+						// echo '<pre>';
+						// print_r($orders);
+						// echo '</pre>';
 						foreach($orders as $order){
 						
 							$status ='';
@@ -216,7 +219,7 @@
 								<td><?=($order->payment_type==1)?'Cash':'Online';?></td>
 								<td><?=CURRENCY.' '.number_format($order->grand_total,2);?></td>
 								<td><?=$order->platform?></td>
-								<td><?=date('D j, Y, g:i a',strtotime($order->added_date))?></td>
+								<td><?=date('D j, Y, g:i a',$order->added_date_timestamp/1000)?></td>
 								<td class="status_<?php echo $order->order_id; ?>" ><?php echo $status;?></td>
 								<td>
 									<a href="javascript:void(0)"  class="printNewOrder"  data-id="<?=$order->order_id?>"  user-id="<?=$order->user_id?>" restaurant-id="<?=$order->restaurant_id?>"  data-toggle="tooltip" data-placement="top" title="Print"><span class="badge badge-success">Print</span></a> |

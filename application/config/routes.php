@@ -122,6 +122,8 @@ $route['admin/tablebooking/setting/edit'] = "admin/Tablebooking/tableBookingSett
 
 $route['admin/user/view'] = "admin/User/userView";
 $route['admin/user/view/(:num)'] = "admin/User/userView/$1";
+$route['admin/driver/edit/(:any)'] = "admin/User/driverAdd/$1";
+$route['admin/driver/add'] = "admin/User/driverAdd";
 
 $route['admin/offer/view'] = "admin/Offer/offerView";
 $route['admin/offer/view/(:num)'] = "admin/Offer/offerView/$1";

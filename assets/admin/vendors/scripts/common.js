@@ -135,6 +135,7 @@ $('.description').wysihtml5({
 });
 
 $(function () {
+	var const_country = country
 	
 	$('.select222').select2()
 	var currentDate = new Date();
@@ -1392,14 +1393,88 @@ $(function () {
 	});
 
 	$('.change-order-status').on('click', function () {
+		$('#driver option').removeAttr('disabled');
+		$("#driver option[value='']").attr('disabled', 'disabled');
+		$(".selectpicker").selectpicker('refresh');
+		$('.driverDropdown').css("display", "none")
 		var id = $(this).attr('data-id');
+		var user_id = $(this).attr('user-id');
+		var order_type = $(this).attr('data-order-type');
 		var status = $(this).attr('current-status');
 		$('#order_id').val(id)
-		if(status!=1 && status!=0)
-		{
+		$('#user_id').val(user_id)
+		$('#order_type').val(order_type)
+
+		if(status!=1 && status!=0){
 			$('#new_status').val(status)
 		}
+		if(order_type==2){
+			$('.driverDropdown').removeAttr("style")
+
+			if(status==3 || status==11 || status==1){
+				$('.driverDropdown').removeAttr("style")
+				$('.toggleTime').removeAttr("style")
+			}else{
+				$('.driverDropdown').css("display", "none")
+				$('.toggleTime').css("display", "none")
+			}
+		} else if(order_type==1){
+
+			if(status==3 || status==11 || status==1){
+				$('.driverDropdown').css("display", "none")
+				$('.toggleTime').removeAttr("style")
+			}else{
+				$('.driverDropdown').css("display", "none")
+				$('.toggleTime').css("display", "none")
+			}
+		}
+		//$('.loading-image').show();
+		var url = site_url+'admin/order/checkOrderInvitaion' 
+		 $.ajax({
+			'type': "POST",
+			'url': url,
+			'data': { order_id: id},
+			'dataType': 'json',
+			success: function (data) {
+				$('.loading-image').hide();
+				var user = data.data
+				user.forEach((entry) => {
+					//entry = JSON.stringify(entry)
+					var driver_user_id = entry['driver_user_id']
+					$("#driver option[value="+driver_user_id+"]").attr('disabled', 'disabled');
+				})
+				$(".selectpicker").selectpicker('refresh');
+				
+				//$('.status_'+order_id).html(status)
+			}
+		 });
+
 		$('#changeStatusModal').modal('show')
+	
+	});
+
+	$('#new_status').on('change', function () {
+
+		var status = $('option:selected', this).val();
+		var order_type = $('#order_type').val();
+		if(order_type==2){
+			$('.driverDropdown').removeAttr("style")
+
+			if(status==3 || status==11 || status==1){
+				$('.driverDropdown').removeAttr("style")
+				$('.toggleTime').removeAttr("style")
+			}else{
+				$('.driverDropdown').css("display", "none")
+				$('.toggleTime').css("display", "none")
+			}
+		} else if(order_type==1){
+			$('.driverDropdown').css("display", "none")
+			if(status==3 || status==11 || status==1){
+				$('.toggleTime').removeAttr("style")
+			}else{
+				$('.toggleTime').css("display", "none")
+			}
+		}
 	
 	});
 
@@ -1440,10 +1515,16 @@ $(function () {
 	});
 
 	$( document ).on( "click", ".openTimePopup", function() {
+		$('.driverDropdown').css("display", "none")
 		var id = $(this).attr('data-id');
 		var user_id = $(this).attr('user-id');
+		var order_type = $(this).attr('data-order-type');
 		$('#time_order_id').val(id)
 		$('#time_user_id').val(user_id)
+		$('#time_order_type').val(order_type)
+		if(order_type==2){
+			$('.driverDropdown').removeAttr("style")
+		}
 		$('#acceptOrderTime').modal('show')
 	});
 
@@ -1451,10 +1532,11 @@ $(function () {
 		var self = this;
 		var order_id = $('#time_order_id').val();
 		var user1 = $('#time_user_id').val();
+		var time_order_type = $('#time_order_type').val();
 		var delivery_time = $('#delivery_time').val();
+		var driver = (time_order_type==2)?$('#driver').val():'';
 		var new_status = 3;
 		var order_remark = '';
-		
 		
 		if(delivery_time=='')
 		{
@@ -1467,14 +1549,14 @@ $(function () {
 			$('#delivery_time').removeClass('form-control-danger');
 			$('.delivery_time_error').html('');
 		}
-		
+
 		var status ='<span class="badge badge-success">Accepted</span>';
 		var url = site_url+'admin/order/changeorderstatus' 
 		$('.loading-image').show();
 		$.ajax({
 			'type': "POST",
 			'url': url,
-			'data': { order_id: order_id, new_status: new_status,order_remark:order_remark ,user:user1,delivery_time:delivery_time},
+			'data': { order_id: order_id, new_status: new_status,order_remark:order_remark ,user:user1,delivery_time:delivery_time,driver:driver},
 			'dataType': 'json',
 			success: function (data) {
 				$('.loading-image').hide();
@@ -1505,12 +1587,16 @@ $(function () {
 	});
 
 	$('.submitStatus').on('click', function () {
+
 		var self = this;
 		var order_id = $('#order_id').val();
+		var user1 = $('#user_id').val();
+		var time_order_type = $('#order_type').val();
+		var delivery_time = $('#delivery_time').val();
+		var driver = (time_order_type==2)?$('#driver').val():[];
 		var new_status = $('#new_status').val();
 		var order_remark = $('#order_remark').val();
-		var delivery_time = 0;
-
+	
 		if(new_status=='')
 		{
 			$('#new_status').addClass('form-control-danger');
@@ -1522,7 +1608,12 @@ $(function () {
 			$('#new_status').removeClass('form-control-danger');
 			$('.new_status_error').html('');
 		}
-		
+
+		if(new_status!=3 && new_status!=11 && new_status!=1){
+			delivery_time = 0;
+			driver =[];
+		}
+
 		var status ='';
 		if(new_status==1)
 		{
@@ -1560,7 +1651,7 @@ $(function () {
 					$.ajax({
 						'type': "POST",
 						'url': url,
-						'data': { order_id: order_id, new_status: new_status,order_remark:order_remark },
+						'data': { order_id: order_id, new_status: new_status,order_remark:order_remark ,user:user1,delivery_time:delivery_time,driver:driver},
 						'dataType': 'json',
 						success: function (data) {
 							$('.loading-image').hide();
@@ -1612,6 +1703,192 @@ $(function () {
 			}
 		})
 	});
+
+	$('#add_driver').on('submit', function(e){
+		var name =  $.trim($('#name').val());
+		var phone =  $.trim($('#mobile').val());
+		var username =  $.trim($('#username').val());
+		var password =  $.trim($('#password').val());
+		var c_password =  $.trim($('#c_password').val());	
+		var id =  $.trim($('#id').val());	
+		var country =  $.trim($('#country').val());
+		var state =  $.trim($('#state').val());
+		var city =  $.trim($('#city').val());
+		var pincode =  $.trim($('#pincode').val());
+		var address =  $.trim($('#address').val());	
+		if(name=='')
+		{
+			$('#name').addClass('form-control-danger');
+			$('#name').focus();
+			$('.errName').html('Driver name can\'t be blank.');
+			return false;
+		}else{
+			$('#name').addClass('form-control-success');
+			$('#name').removeClass('form-control-danger');
+			$('.errName').html('');
+		}
+			
+		if(phone=='')
+		{
+			$('#mobile').addClass('form-control-danger');
+			$('#mobile').focus();
+			$('.errPhone').html('mobile number can\'t be blank.');
+			return false;
+		}else{
+			if((phone.length!= 11 && const_country=='UK') || (phone.length!= 10 && const_country=='IN')){
+					$('#mobile').addClass('form-control-danger');
+					$('#mobile').focus();
+					$('.errPhone').html("Mobile number should be "+mobile_length+" digits.");
+					return false;
+			}else {
+					$('#mobile').removeClass('form-control-danger');
+					$('#mobile').addClass('form-control-success');
+					$('.errPhone').html('');
+				}
+		}
+		
+		if(country=='')
+		{
+			$("#country").next("span.select2-container").find("span.select2-selection--single").css('border-color','#dc3545'); 
+			$('#country').focus();
+			$('.errCountry').html('Country can\'t be blank.');
+			return false;
+		}else{
+			$('#country').addClass('form-control-success');
+			$("#country").next("span.select2-container").find("span.select2-selection--single").css('border-color',''); 
+			$('.errCountry').html('');
+		}
+			
+		if(state=='')
+		{
+			$("#state").next("span.select2-container").find("span.select2-selection--single").css('border-color','#dc3545'); 
+			$('#state').focus();
+			$('.errState').html('State can\'t be blank.');
+			return false;
+		}else{
+			$('#state').addClass('form-control-success');
+			$("#state").next("span.select2-container").find("span.select2-selection--single").css('border-color',''); 
+			$('.errState').html('');
+		}
+			
+		if(city=='')
+		{
+			$("#city").next("span.select2-container").find("span.select2-selection--single").css('border-color','#dc3545'); 
+			$('#city').focus();
+			$('.errCity').html('City can\'t be blank.');
+			return false;
+		}else{
+			$('#city').addClass('form-control-success');
+			$("#city").next("span.select2-container").find("span.select2-selection--single").css('border-color','');
+			$('.errCity').html('');
+		}
+			
+		if(pincode=='')
+		{
+			$('#pincode').addClass('form-control-danger');
+			$('#pincode').focus();
+			$('.errPincode').html('Pincode can\'t be blank.');
+			return false;
+		}else{
+			$('#pincode').addClass('form-control-success');
+			$('#pincode').removeClass('form-control-danger');
+			$('.errPincode').html('');
+		}
+			
+		if(address=='')
+		{
+			$('#address').addClass('form-control-danger');
+			$('#address').focus();
+			$('.errAddress').html('Address can\'t be blank.');
+			return false;
+		}else{
+			$('#address').addClass('form-control-success');
+			$('#address').removeClass('form-control-danger');
+			$('.errAddress').html('');
+		}
+		
+		if(username=='')
+		{
+			$('#username').addClass('form-control-danger');
+			$('#username').focus();
+			$('.errusername').html('Username can\'t be blank.');
+			return false;
+		}else{
+			var filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+			if (!filter.test(username)) 
+			{
+				$('#username').addClass('form-control-danger');
+				$('#username').focus();
+				$('.errusername').html('Please provide a valid email address');
+				return false;
+			}
+			else
+			{
+				$('#username').addClass('form-control-success');
+				$('#username').removeClass('form-control-danger');
+				$('.errusername').html('');
+			}
+		}
+		
+		if(id=='' || id<=0 ){
+			if(password=='')
+			{
+				$('#password').addClass('form-control-danger');
+				$('#password').focus();
+				$('.err_password').html('Password can\'t be blank.');
+				return false;
+			}else{
+				$('#password').addClass('form-control-success');
+				$('#password').removeClass('form-control-danger');
+				$('.err_password').html('');
+			}
+			
+			if(c_password=='')
+			{
+				$('#c_password').addClass('form-control-danger');
+				$('#c_password').focus();
+				$('.err_c_password').html('Confirm password can\'t be blank.');
+				return false;
+			}else{
+				
+				
+				if (password!=c_password) 
+				{
+					$('#c_password').addClass('form-control-danger');
+					$('#c_password').focus();
+					$('.err_c_password').html('Password and confirm does not match');
+					return false;
+				}
+				else
+				{
+					$('#c_password').addClass('form-control-success');
+					$('#c_password').removeClass('form-control-danger');
+					$('.err_c_password').html('');
+				}
+			}
+		}
+		
+		$('#add_driver').submit();
+        
+	});
+
+	$( document ).on( "click", ".view-user-detail", function() {
+		var user_id = $(this).attr( "user-id");
+		$('.loading-image').show();
+		$.ajax({
+			url: site_url+"admin/user/userDetailView",
+			method:"POST",
+			'data': {user_id:user_id},
+			'dataType': 'html',
+			success: function (data) {
+				$('.loading-image').hide();
+				//alert(data)
+				$('.appendOrderDetail').html(data);
+				$('#viewOrderDetail').modal('show');
+			}
+		})
+	});
+
 });
 
 

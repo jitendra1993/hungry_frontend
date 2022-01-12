@@ -110,7 +110,7 @@
 								<td>
 								<?php 
 								if($order->settled==0 && $this->session->userdata('role_master_tbl_id')==2){ ?>
-									<a href="javascript:void(0)" class=" openTimePopup" data-status="3"  data-id="<?=$order->order_id?>" data-toggle="tooltip" user-id="<?=$order->user_id?>" data-placement="top" title="Accept"><span class="badge badge-primary">Accept</span></a> |
+									<a href="javascript:void(0)" class=" openTimePopup" data-status="3"  data-id="<?=$order->order_id?>" data-toggle="tooltip" user-id="<?=$order->user_id?>" data-order-type="<?php echo $order->order_type;?>" data-placement="top" title="Accept"><span class="badge badge-primary">Accept</span></a> |
 									
 									<a href="javascript:void(0)" class=" newOrderReject" data-status="4"  data-id="<?=$order->order_id?>" data-toggle="tooltip" data-placement="top" user-id="<?=$order->user_id?>" title="Reject"><span class="badge badge-danger">Reject</span></a> |
 									<?php 
@@ -145,10 +145,38 @@
 			<div class="form-box">
 			<input type='hidden' name='time_order_id' id="time_order_id" value=''>
 			<input type='hidden' name='time_user_id' id="time_user_id" value=''>
+			<input type='hidden' name='time_order_type' id="time_order_type" value=''>
 			<div class="col-md-12 form-group">
 				<input type='text' name='delivery_time' id="delivery_time" value="<?php echo date('h:m A',time()); ?>" class="form-control time-picker">
 				<span class="error has-danger delivery_time_error"></span>
 			</div>
+			<div class="col-md-12 form-group">
+				<select name="driver[]" name="driver" id="driver" class="form-control driverDropdown multiple selectpicker" multiple style="display:none">
+					<option value="" disabled>Select Driver</option>
+					<?php 
+					//is_free-> 0 occupied,1 free,2 pending order or partial occupied
+					foreach($driver as $singleDriver){
+						$occupied ='';
+						$disabled ='';
+						$driver_pending_order = count($singleDriver->driver_order);
+						if($singleDriver->is_free==0){
+							$occupied =' (Occupied)';
+							$disabled ='disabled';
+
+						}else if($singleDriver->is_free==1){
+							$occupied ='';
+							$disabled ='';
+
+						}else if($singleDriver->is_free==2){
+							$occupied =' (Pending Orders-'.$driver_pending_order .')';
+							$disabled ='';
+						}
+						echo '<option value="'. $singleDriver->hash.'"'.$disabled.'>'. $singleDriver->name.''.$occupied.'</option>';
+					}
+					?>
+				</select>
+			</div>
+
 			<br>
 			<div class="search-icon">
 				<button type="button" class="btn btn-success submitAcceptOrderTime">Submit</button>

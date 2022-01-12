@@ -12,9 +12,23 @@ class User_model extends CI_Model{
 		
 		$match = [];
 		$match['status']=array('$nin'=>array(2));
-		$match['role_master_tbl_id']=array('$nin'=>array(1));
+		$match['role_master_tbl_id']=array('$nin'=>array(1,2));
+
+		if ($this->session->userdata('role_master_tbl_id')==2) {
+			$adminDetail = $this->fetAdminId();
+			$user_id = $this->session->userdata('user_id');
+			$match['role_master_tbl_id']=array('$in'=>array(3));
+			$match['added_by_id']=array('$in'=>array($user_id,$adminDetail->hash));
+		}
+
 		if(!empty($filter))
 		{
+			if(!empty($filter['filter_user_type']))
+			{
+				$filter_user_type = (int)($filter['filter_user_type']);
+				$match['role_master_tbl_id']=array('$in'=>array($filter_user_type));
+			}
+
 			if(!empty($filter['filter_name']))
 			{
 				$filter_name = trim($filter['filter_name']);
@@ -63,10 +77,23 @@ class User_model extends CI_Model{
 	public function getMasterUser($filter,$data = array()){
 		$match = [];
 		$match['status']=array('$nin'=>array(2));
-		$match['role_master_tbl_id']=array('$nin'=>array(1));
+		$match['role_master_tbl_id']=array('$nin'=>array(1,2));
+
+		if ($this->session->userdata('role_master_tbl_id')==2) {
+			$adminDetail = $this->fetAdminId();
+			$user_id = $this->session->userdata('user_id');
+			$match['role_master_tbl_id']=array('$in'=>array(3));
+			$match['added_by_id']=array('$in'=>array($user_id,$adminDetail->hash));
+		}
 
 		if(!empty($filter))
 		{
+			if(!empty($filter['filter_user_type']))
+			{
+				$filter_user_type = (int)($filter['filter_user_type']);
+				$match['role_master_tbl_id']=array('$in'=>array($filter_user_type));
+			}
+
 			if(!empty($filter['filter_name']))
 			{
 				$filter_name = trim($filter['filter_name']);
@@ -108,7 +135,9 @@ class User_model extends CI_Model{
 				$match['status']=$s;	
 			}
 		}
-		$results = $this->db->user_master->find($match,['skip' => $data['start']],['limit' => $data['limit']],['sort' => ['added_date_timestamp' => 1]]);
+		
+		$results = $this->db->user_master->find($match,['skip' => $data['start']],['limit' => $data['limit']],['sort' => ['updated_date_timestamp' => -1]]);
+		//$results = $this->db->user_master->find($match,$options);
 		$rr = [];
 		foreach($results as $result) {
 			$rr[] = $result;
@@ -122,6 +151,48 @@ class User_model extends CI_Model{
 		$cond = array('hash'=>$id);
 		$this->db->user_master->updateMany($cond,array('$set'=>$data),array("multi"=>false));
 		return true;
+	}
+
+	public function getUserById($id){
+		$results = $this->db->user_master->findOne(array('hash'=>$id));
+		return (Object)$results;
+	}
+
+	public function fetAdminId(){
+		$results = $this->db->user_master->findOne(array('role_master_tbl_id'=>1),array('projection' =>['_id'=>0,'hash'=>1]));
+		return (Object)$results;
+	}
+
+	public function getUserDetail($user_id){
+		
+		$match = [];
+		$match['$match']['role_master_tbl_id']=array('$in'=>array(3,4));
+		$match['$match']['hash']=$user_id;
+		
+		$ops = array(
+			array(
+				'$lookup' => array(
+					"from" => "merchant_info_master",
+					"localField" => "added_by_id",// filed in matched collection
+					"foreignField" => "user_hash_id", //filedin current collection
+					'pipeline' => [['$project' => ['_id'=>0,'merchant_name'=>1,'merchant_phone'=>1,'contact_name'=>1,'contact_phone'=>1,'contact_email'=>1]]],
+					"as" => "merchant"
+				)
+			),
+			$match,
+			array('$project' =>['_id'=>0,'cordinate'=>0,'added_date'=>0,'updated_date'=>0,'added_date_iso'=>0,'updated_date_iso'=>0,'verification_token'=>0,'verification_token_time'=>0]),
+		);
+		$results = $this->db->user_master->aggregate($ops);
+		$rr = [];
+		foreach($results as $result) {
+			$rr = $result;
+		}
+		// echo '<pre>';
+		// print_r($rr);
+		// echo '</pre>';
+		// die;
+		return $rr;
+		
 	}
 
 }

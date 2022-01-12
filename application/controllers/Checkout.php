@@ -76,7 +76,7 @@ class Checkout extends CI_Controller {
 			$view['delivery_type'] = $delivery_type;
 			$view['place'] = $deliverySetting['place'];
 		}
-		$storeTime = $storeTimeArr[$today];
+	
 	
 
 		if($merchant_close_store==0 && $merchant_disabled_ordering==0){ 

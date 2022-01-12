@@ -154,3 +154,34 @@ define('payment_status',array(
 	'3'=>'Cancel',
 	'4'=>'Decline'
 ));	
+
+define('role_master',array(
+	'3'=>'Driver',
+	'4'=>'User'
+));	
+
+define('is_free',array(
+	'0'=>'Occupied',
+	'1'=>'Free',
+	'2'=>'Pending order or partial occupied'
+));	
+
+define('driver_order_status',array(
+	'1'=>'Accept',
+	'2'=>'pending/default',
+	'3'=>'Reject'
+));	
+
+define('driver_status',array(
+	'0'=>'Default',
+	'2'=>'Order sent to driver waiting for accepting',
+	'1'=>'Accept'
+));	
+
+define('order_assigned',array(
+	'0'=>'Default',
+	'1'=>'Assigned'
+));	
+
+
+

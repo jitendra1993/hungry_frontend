@@ -1,3 +1,4 @@
+
 <div class="container mt-3 mb-3 link-background bg-white">
     <section class="product_list pt-5">
         <div class="container">
@@ -72,10 +73,11 @@
                                     <tbody>
                                         <?php
 										if(!empty($orders) && count($orders)>0){
+											
 											$i= $start+1;
 											foreach($orders as $data){
 												$payment_type = $data['payment_type'];
-												$payment_id = $data['payment_id'];
+												//$payment_id = $data['payment_id'];
 												$payment_status = $data['payment_status'];
 												$status = $data['status'];
 												

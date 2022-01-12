@@ -118,11 +118,7 @@
 					
 				<?php
 					if ($this->session->userdata('role_master_tbl_id')==1) { ?>
-						<li>
-							<a href="<?=base_url('admin/user/view')?>" class="dropdown-toggle no-arrow <?=($this->uri->segment(2)==='user')?'active':''?>">
-								<i class="fa fa-list-alt"></i><span class="mtext">All User</span>
-							</a>
-						</li>
+						
 
 						<li>
 							<a href="<?=base_url('admin/offer/view')?>" class="dropdown-toggle no-arrow <?=($this->uri->segment(2)==='offer')?'active':''?>">
@@ -177,6 +173,12 @@
 						<?php 
 					} 
 				?>
+				<li>
+					<a href="<?=base_url('admin/user/view')?>" class="dropdown-toggle no-arrow <?=($this->uri->segment(2)==='user')?'active':''?>">
+						<i class="fa fa-list-alt"></i><span class="mtext">All 
+							<?php  echo ($this->session->userdata('role_master_tbl_id')==1)?'User/Driver':'Driver';?></span>
+					</a>
+				</li>
 				<li class="dropdown">
 					<a href="javascript:;" class="dropdown-toggle">
 					<i class="fa fa-list-alt"></i><span class="mtext">Reports</span>

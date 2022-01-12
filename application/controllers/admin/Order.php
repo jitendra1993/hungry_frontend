@@ -5,6 +5,7 @@ class Order extends CI_Controller {
 		parent::__construct();
 		
 		$this->load->model('admin/order_model');
+		$this->load->model('admin/user_model');
 		if (!$this->session->userdata('user_id')) {
 			redirect('admin'); 
 		}
@@ -76,11 +77,12 @@ class Order extends CI_Controller {
 		$data['limit'] = $rowperpage; 
 		$data['start'] =$rowno; 
 		$view['orders'] = $this->order_model->getMasterOrder($filter,$data);
+		$view['driver'] = $this->order_model->getDriver();
 		$this->load->view('admin/template_admin',$view);
 	}
 
 	public function orderDetailView(){
-
+		
 		$id = $this->input->post('id');
 		$user_id = $this->input->post('user_id');
 		$restaurant_id = $this->input->post('restaurant_id');
@@ -93,6 +95,8 @@ class Order extends CI_Controller {
 		$status = $response['status'];
 		$result = $response['data'];
 		$message = $response['message'];
+
+		
 		
 		$type = !empty($this->input->post('type'))?$this->input->post('type'):'popup';
 		if($status==200 && $result!=''){
@@ -103,6 +107,10 @@ class Order extends CI_Controller {
 			$payment_status = 'Pending';
 			$address = '';
 			$orderAddress = $orderDetail['address_detail'];
+			$order_history = !empty($orderDetail['status_history'])?$orderDetail['status_history']:[];
+
+			$getOrderInvitedDriverDetail = $this->order_model->getOrderInvitedDriverDetail($id);
+			
 			if($orderDetail['order_type']==2){
 				$address = $orderAddress['name'].'<br>'.$orderAddress['addressLine1'].' ,'.$orderAddress['addressLine2'].'<br>'.$orderAddress['pincode'];
 			}
@@ -136,7 +144,7 @@ class Order extends CI_Controller {
 			} 
 
 			$payment_type= $orderDetail['payment_type']==1?'Cash':'Online';
-			$accept_for =  date('g:i a',strtotime($orderDetail['admin_delivery_time']));
+			$accept_for =  !empty($orderDetail['admin_delivery_time'])?date('g:i a',strtotime($orderDetail['admin_delivery_time'])):'';
 			
 			$print = '
 			<div class="row">
@@ -144,9 +152,9 @@ class Order extends CI_Controller {
 					<div class="row">
 						<div class="col-xs-12 col-sm-12 col-md-12">
 							<address style="font-size: 12px;font-family: sans-serif;font-style: normal;line-height: 16px;">
-								<img src="'.$store_info['mail_logo_url'].'"><br>
-								<strong>'.$store_info['merchant_name'].'</strong><br>'.$store_info['address'].'<br>
-								<strong>Phone</strong>: '.$store_info['contact_phone'].'<br>
+								<img src="'.$merchantInfo['mail_logo_url'].'"><br>
+								<strong>'.$merchantInfo['merchant_name'].'</strong><br>'.$merchantInfo['address'].'<br>
+								<strong>Phone</strong>: '.$merchantInfo['contact_phone'].'<br>
 								<strong>Order Type</strong>: '.$orderType.'<br>
 								<strong>Payment Type</strong>:'.$payment_type.'<br>
 								<strong>Order Number</strong>: '.$orderDetail['order_id'].'<br>
@@ -180,6 +188,61 @@ class Order extends CI_Controller {
 							<div class="col-md-12 form-group p_star">
 								<table class="table table-striped table-bordered">
 									<tbody>	
+										<?php
+										if(!empty($order_history)  && count($order_history)>0){ ?>
+											<tr>
+												<td class="width-50">Order History</td>
+												<td class="text-right width-50">
+													<table class="table table-striped table-bordered">
+														<tbody>	
+															<tr>
+																<th>Status</th>
+																<th>Time</th>
+															</tr>
+																<?php 
+																foreach($order_history as $history){
+																	echo '
+																	<tr>
+																		<td>'.order_status[$history['status']].'</td>
+																		<td>'.date('d-m-Y h:i a',$history['added_date']/1000).'</td>
+																	</tr>	';
+																}
+																?>
+														</tbody>
+													</table>			
+												</td>
+											</tr>
+											<?php
+										} ?>
+
+										<?php
+										if(!empty($getOrderInvitedDriverDetail) && count($getOrderInvitedDriverDetail)>0){ ?>
+											<tr>
+												<td class="width-50">Order Invitation</td>
+												<td class="text-right width-50">
+													<table class="table table-striped table-bordered">
+														<tbody>	
+															<tr>
+																<th>Name</th>
+																<th>Mobile</th>
+															</tr>
+																<?php 
+																foreach($getOrderInvitedDriverDetail as $history){
+																	echo '
+																	<tr>
+																		<td>'.$history->name.'</td>
+																		<td>'.$history->mobile.'</td>
+																	</tr>	';
+																}
+																?>
+														</tbody>
+													</table>			
+												</td>
+											</tr>
+											<?php
+										} ?>
+										
+
 										<tr>
 											<td class="width-50">Customer Name</td>
 											<td class="text-right width-50"><?php echo $userDetail['name'];?></td>
@@ -381,13 +444,16 @@ class Order extends CI_Controller {
 										if($basketValue['order_addon_item_detail'] && count($basketValue['order_addon_item_detail'])>0 && $basketValue['has_addon']==1){ 
 											$addon_cat_name ='';
 											$match_cat_name='-';
-											foreach($val['order_addon_item_detail'] as $subItem){
+											foreach($basketValue['order_addon_item_detail'] as $subItem){
 												$addon_cat_name = $subItem['addon_category_name'];
 												?>
 												<div class="row">
 													<?php
 													if($addon_cat_name!=$match_cat_name){
 														$match_cat_name = $subItem['addon_category_name'];
+														$print .= '<tr>
+														<td class="col-md-9" tyle="text-align: left;font-size: 12px;font-style: normal;font-family: sans-serif;">'.$subItem['addon_category_name'].'</td>
+														</tr>';
 														?>
 														<div class="col-md-12 addons-added sub-it-head"><?php echo $subItem['addon_category_name']; ?></div>
 														<?php
@@ -404,6 +470,13 @@ class Order extends CI_Controller {
 													<p class="menu-price col-md-3 sub-tm-price"><?php echo $right; ?></p>
 												</div>
 												<?php	
+												$print .= '
+												<tr>
+													<td class="col-md-9" tyle="text-align: left;font-size: 12px;font-style: normal;font-family: sans-serif;">'.$subItem['addon_item_name'].'</td>
+													<td class="col-md-1" style="text-align: center;font-size: 12px;font-style: normal;font-family: sans-serif;"> '.$subItem['addon_quantity'].' </td>
+													<td class="col-md-1 text-center"></td>
+													<td style="text-align: right;font-size: 12px;font-style: normal;font-family: sans-serif;">'.$right.'</td>
+												</tr>';
 											}
 										} 
 									}
@@ -575,6 +648,7 @@ class Order extends CI_Controller {
 		$data['limit'] = $rowperpage; 
 		$data['start'] =$rowno; 
 		$view['orders'] = $this->order_model->getMasterOrder($filter,$data);
+		$view['driver'] = $this->order_model->getDriver();
 		$this->load->view('admin/template_admin',$view);
 	}		
 
@@ -582,14 +656,43 @@ class Order extends CI_Controller {
 			
 		$order_id = $this->input->post('order_id');
 		$new_status = (int)$this->input->post('new_status');
+	 	$driver = !empty($this->input->post('driver'))?array_filter($this->input->post('driver')):[];
 		$order_remark = htmlspecialchars(strip_tags($this->input->post('order_remark')));
 		$delivery_time = (!empty($this->input->post("delivery_time")))?date("H:i", strtotime($this->input->post("delivery_time"))):'00:00:00';
 		$msg = 'Order status has been successfully changed.';
-		
 		$data = array('status' => $new_status,'admin_order_remark'=>$order_remark,'admin_delivery_time'=>$delivery_time);
+		if($driver!='' && !empty($driver) && $driver!=0 && count($driver)>0)
+		{
+			$data['driver_status']=(int)2; //sending invitation for order accapt.  0 default,1 driver assigned,2 sending inivitation
+			$this->order_model->updateDriverFreeStatus(array('is_free'=>(int)2),$driver); //,2 pending order or partial occupied
+
+			$date_created = new \MongoDB\BSON\UTCDateTime(time()*1000);
+			foreach($driver as $driverId){
+				$hashUnique = md5(uniqid(rand(), true));
+				$driverData = array(
+					'hash'=> $hashUnique,
+					'driver_user_id' =>$driverId,
+					'order_id' =>$order_id,
+					'order_status' =>$new_status,
+					'admin_delivery_time' =>$delivery_time,
+					'driver_order_status' =>(int)2,   //1 accept, 2 pending/default, 3 reject
+					'order_assigned' =>(int)0,   //1 yes, 0 no or default
+					'added_date'=> date('d-m-Y H:i:s'),
+					'updated_date'=>date('d-m-Y H:i:s'),
+					'added_date_timestamp'=>time()*1000,
+					'updated_date_timestamp'=>time()*1000,
+					'added_date_iso'=>$date_created,
+					'updated_date_iso'=>$date_created,
+					'driver_action_timestamp'=>time()*1000,
+				);
+				$this->order_model->addOrderForDriver($driverData);
+			}
+
+		}
 		if($new_status==8 || $new_status==9){
 			$data['payment_status']= 1;
 		}
+	
 		$orderDetail = changeOrderStatusMail($order_id,$new_status,$order_remark);
 		$status_history = json_decode(json_encode($orderDetail['status_history']),true);
 		$status_history[] = array('status'=>$new_status,'added_date'=>time()*1000);
@@ -597,9 +700,9 @@ class Order extends CI_Controller {
 		if($order_id!=''){
 			$this->order_model->updateOrder($data,$order_id);
 			$response = array(
-			'status'=>'1',
-			'msg'=>$msg,
-			'redirect'=>'0'
+				'status'=>'1',
+				'msg'=>$msg,
+				'redirect'=>'0'
 			);
 			
 		}else{
@@ -664,6 +767,7 @@ class Order extends CI_Controller {
 		$data['limit'] = $rowperpage; 
 		$data['start'] =$rowno; 
 		$view['orders'] = $this->order_model->getMasterOrder($filter,$data);
+		$view['driver'] = $this->order_model->getDriver();
 		$this->load->view('admin/template_admin',$view);
 	}
 
@@ -752,5 +856,17 @@ class Order extends CI_Controller {
 	public function settlement(){
 		$this->order_model->settlement();
 			
+	}
+
+	public function checkOrderInvitaion(){
+		$order_id = $this->input->post('order_id');
+		$data = $this->order_model->checkOrderInvitaion($order_id);
+		$response = array(
+			'status'=>'1',
+			'data'=>$data,
+			'redirect'=>'0'
+		);
+		header('Content-Type: application/json');
+		echo json_encode($response);
 	}
 }
