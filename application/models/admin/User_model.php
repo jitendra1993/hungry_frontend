@@ -195,5 +195,9 @@ class User_model extends CI_Model{
 		
 	}
 
+	public function createIndex(){
+		$this->db->user_master->createIndex(['location'=> "2dsphere" ] );
+	}
+
 }
 ?>

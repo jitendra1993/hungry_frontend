@@ -298,7 +298,10 @@ class Setting_model extends CI_Model{
 		$this->db->social_media_setting_master->insertOne($data);
 		return true;
 	}
-		
-		
+	
+	public function createIndex(){
+		$this->db->merchant_info_master->createIndex(['location'=> "2dsphere" ] );
 	}
+		
+}
 ?>

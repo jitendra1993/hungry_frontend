@@ -30,6 +30,7 @@
 			<?php echo form_error('contact_name', '<span>', '</span>'); ?>
 			<?php echo form_error('contact_phone', '<span>', '</span>'); ?>
 			<?php echo form_error('contact_email', '<span>', '</span>'); ?>
+			<?php echo form_error('store_category[]', '<span>', '</span><br>'); ?>
 			<?php echo form_error('country', '<span>', '</span>'); ?>
 			<?php echo form_error('state', '<span>', '</span>'); ?>
 			<?php echo form_error('city', '<span>', '</span>'); ?>
@@ -89,6 +90,21 @@
 			<div class="col-sm-12 col-md-10">
 				<input type="text" name="contact_email" id="contact_email"  class="form-control" placeholder="Contact Email" value="<?php echo isset($merchant_info->contact_email)?set_value('contact_email',html_entity_decode($merchant_info->contact_email)):set_value('contact_email'); ?>">
 					<div class="has-danger form-control-feedback errContactEmail"></div>
+			</div>
+		</div>
+
+		<div class="form-group row">
+			<label class="col-sm-12 col-md-2 col-form-label">Store Category</label>
+			<div class="col-sm-12 col-md-10">
+				<select name="store_category[]" id="store_category" class="form-control multiple selectpicker " multiple>
+					<?php
+					foreach($getStoreCategory as $k=>$category){
+						$sel = (isset($merchant_info->store_category) && in_array($category->id,(array)$merchant_info->store_category))?'selected':'';
+						echo '<option value="'.$category->id.'" '.$sel.'>'.$category->name.'</option>';
+					}
+					?>
+				</select>
+				<div class="has-danger form-control-feedback errStoreCategory"></div>
 			</div>
 		</div>
 		

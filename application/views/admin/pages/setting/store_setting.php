@@ -151,6 +151,16 @@
 			</div>
 		</div>
 	</div>
+
+	<div class="form-group row mb-0">
+		<label class="col-sm-12 col-md-3 col-form-label">Used Admin Driver?</label>
+		<div class="col-sm-12 col-md-9 col-form-label">
+			<div class="custom-control custom-checkbox mb-5">
+				<input type="checkbox" class="custom-control-input" id="used_admin_driver" name="used_admin_driver" value="1" <?php echo (isset($store_setting->used_admin_driver) && $store_setting->used_admin_driver==1)?'checked':''; ?>>
+				<label class="custom-control-label" for="used_admin_driver"></label>
+			</div>
+		</div>
+	</div>
 				
 	<div class="form-group row ">
 		<label class="col-sm-12 col-md-3 col-form-label">Close Message</label>

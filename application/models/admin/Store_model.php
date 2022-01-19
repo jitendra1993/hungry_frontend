@@ -30,20 +30,20 @@ class Store_model extends CI_Model{
 			}
 			if(!empty($filter['filter_from_date']) && !empty($filter['filter_to_date']))
 			{
-				$from_date = date('Y-m-d',strtotime($filter['filter_from_date']));
-				$to_date = date('Y-m-d',strtotime($filter['filter_to_date']));
+				$from_date = date('Y-m-d 00:00:00',strtotime($filter['filter_from_date']));
+				$to_date = date('Y-m-d 23:59:59',strtotime($filter['filter_to_date']));
 				$match['$match']['added_date_timestamp']=['$gte'=>strtotime($from_date)*1000,'$lt'=>strtotime($to_date)*1000];
 				
 			}
 			if(!empty($filter['filter_from_date']) && empty($filter['filter_to_date']))
 			{
-				$from_date = date('Y-m-d',strtotime($filter['filter_from_date']));
+				$from_date = date('Y-m-d 00:00:00',strtotime($filter['filter_from_date']));
 				$match['$match']['added_date_timestamp']=['$gte'=>strtotime($from_date)*1000];
 			}
 			
 			if(empty($filter['filter_from_date']) && !empty($filter['filter_to_date']))
 			{
-				$to_date = date('Y-m-d',strtotime($filter['filter_to_date']));
+				$to_date = date('Y-m-d 23:59:59',strtotime($filter['filter_to_date']));
 				$match['$match']['added_date_timestamp']=['$lte'=>strtotime($from_date)*1000];
 			}
 			
@@ -105,20 +105,20 @@ class Store_model extends CI_Model{
 			}
 			if(!empty($filter['filter_from_date']) && !empty($filter['filter_to_date']))
 			{
-				$from_date = date('Y-m-d',strtotime($filter['filter_from_date']));
-				$to_date = date('Y-m-d',strtotime($filter['filter_to_date']));
+				$from_date = date('Y-m-d 00:00:00',strtotime($filter['filter_from_date']));
+				$to_date = date('Y-m-d 23:59:59',strtotime($filter['filter_to_date']));
 				$match['$match']['added_date_timestamp']=['$gte'=>strtotime($from_date)*1000,'$lt'=>strtotime($to_date)*1000];
 				
 			}
 			if(!empty($filter['filter_from_date']) && empty($filter['filter_to_date']))
 			{
-				$from_date = date('Y-m-d',strtotime($filter['filter_from_date']));
+				$from_date = date('Y-m-d 00:00:00',strtotime($filter['filter_from_date']));
 				$match['$match']['added_date_timestamp']=['$gte'=>strtotime($from_date)*1000];
 			}
 			
 			if(empty($filter['filter_from_date']) && !empty($filter['filter_to_date']))
 			{
-				$to_date = date('Y-m-d',strtotime($filter['filter_to_date']));
+				$to_date = date('Y-m-d 23:59:59',strtotime($filter['filter_to_date']));
 				$match['$match']['added_date_timestamp']=['$lte'=>strtotime($from_date)*1000];
 			}
 			
@@ -280,7 +280,10 @@ class Store_model extends CI_Model{
 		return $out;
 		
 	}
-			
+	
+	public function createIndex(){
+		$this->db->merchant_info_master->createIndex(['location'=> "2dsphere" ] );
+	}
 		
 	}
 ?>

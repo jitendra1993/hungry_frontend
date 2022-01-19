@@ -37,7 +37,7 @@ class StoreCategory extends CI_Controller {
 		$uri = http_build_query($_GET);
 		
 		$rowperpage = ROW_PER_PAGE;
-		$rowno = ($this->uri->segment(5))? $this->uri->segment(5) : 0;
+		$rowno = ($this->uri->segment(4))? $this->uri->segment(4) : 0;
 		if($rowno!= 0){
 			$rowno = ($rowno-1) * $rowperpage;
 		}	
@@ -46,7 +46,7 @@ class StoreCategory extends CI_Controller {
 		$config["base_url"] = base_url() . "admin/store-category/view";
 		$config["total_rows"] = $this->storecategory_model->getCountStoreCategory($filter);
 		$config["per_page"] = $rowperpage;
-		$config["uri_segment"] = 5;
+		$config["uri_segment"] = 4;
 		$config['use_page_numbers'] = TRUE;
 		if(!empty($_GET))
 		{

@@ -28,12 +28,7 @@ function get_admin_store_detail() {
 	return $result;
 }
 	
-function notification() {
-    $CI =& get_instance();
-	$sql = " SELECT order_id FROM master_order_tbl WHERE status=1";
-	$result = $CI->db->query($sql);
-	return $rows = $result->num_rows();
-    }
+
 	
 function seoTag() {
 

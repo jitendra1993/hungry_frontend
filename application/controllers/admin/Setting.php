@@ -5,6 +5,7 @@ class Setting extends CI_Controller {
 		parent::__construct();
 		
 		$this->load->model('admin/setting_model');
+		$this->load->model('admin/store_model');
 		if (!$this->session->userdata('user_id')) {
 			redirect('admin'); 
 		}
@@ -51,14 +52,18 @@ class Setting extends CI_Controller {
 		}
 		$condition = array();
 		$getCountry = $this->setting_model->getCountry($condition);
+		$getStoreCategory = $this->store_model->getStoreCategory();
+		$view['getStoreCategory'] = $getStoreCategory;
 		$view['getCountry'] = $getCountry;
 		$file_error = 0;
 		if($this->input->method(TRUE) == 'POST'){
+			
 			$this->form_validation->set_rules('merchant_name', 'Merchant Name', 'trim|required|min_length[2]');
 			$this->form_validation->set_rules('merchant_phone', 'Merchant phone', 'trim|required');
 			$this->form_validation->set_rules('contact_name', 'Contact Name', 'trim|required|min_length[2]');
 			$this->form_validation->set_rules('contact_phone', 'Contact phone', 'trim|required');
 			$this->form_validation->set_rules('contact_email', 'Contact Email', 'trim|required|valid_email');
+			$this->form_validation->set_rules('store_category[]', 'Storecategory', 'trim|required');
 			$this->form_validation->set_rules('country', 'Country', 'trim|required');
 			$this->form_validation->set_rules('state', 'State', 'trim|required');
 			$this->form_validation->set_rules('city', 'City', 'trim|required');
@@ -110,7 +115,7 @@ class Setting extends CI_Controller {
 					$country = explode('^',htmlspecialchars(strip_tags($this->input->post('country'))));
 					$state = explode('^',htmlspecialchars(strip_tags($this->input->post('state'))));
 					$city = explode('^',htmlspecialchars(strip_tags($this->input->post('city'))));
-					
+					$store_category = $this->input->post('store_category[]');
 					$socilaMedia['facebook'] =$this->input->post('facebook');
 					$socilaMedia['twitter'] =$this->input->post('twitter');
 					$socilaMedia['youtube'] =$this->input->post('youtube');
@@ -126,6 +131,7 @@ class Setting extends CI_Controller {
 						'contact_name' =>  htmlspecialchars(strip_tags($this->input->post('contact_name'))),
 						'contact_phone' => htmlspecialchars(strip_tags($this->input->post('contact_phone'))),
 						'contact_email' => htmlspecialchars(strip_tags($this->input->post('contact_email'))),
+						'store_category' => $store_category,
 						'country' => $country[0],
 						'country_id' => (int)$country[1],
 						'state' => $state[0],
@@ -133,6 +139,7 @@ class Setting extends CI_Controller {
 						'city' => $city[0],
 						'city_id' => (int)$city[1],
 						'address' => htmlspecialchars(strip_tags($this->input->post('address'))),
+						'location' => array('type'=>'Point','coordinates'=> [28.412894,77.311299]),
 						'pincode' => htmlspecialchars(strip_tags($this->input->post('pincode'))),
 						'about' => htmlspecialchars(strip_tags($this->input->post('about'))),
 						'logo' => $this->input->post('old_logo'),
@@ -164,11 +171,14 @@ class Setting extends CI_Controller {
 					
 					if(!empty($id)){
 						unset($data['added_date'],$data['added_date_timestamp'],$data['added_date_iso'],$data['user_hash_id']);
+						
 						$result = $this->setting_model->updateMerchant($data,$id);
+						$this->setting_model->createIndex();
 						$this->session->set_flashdata('msg_success', 'You have updated store info successfully!');
 						redirect(base_url('admin/setting/store-info'));
 					}else{
 						$result = $this->setting_model->addMerchantInfo($data);
+						$this->setting_model->createIndex();
 						if($result){
 							$this->session->set_flashdata('msg_success', 'You have added store info successfully!');
 							redirect(base_url('admin/setting/store-info'));
@@ -298,6 +308,7 @@ class Setting extends CI_Controller {
 			$dinein_enable = (!empty($this->input->post("dinein_enable")))?$this->input->post("dinein_enable"):0;
 			$dinein_open_table_enable = (!empty($this->input->post("dinein_open_table_enable")))?$this->input->post("dinein_open_table_enable"):0;
 			$merchant_show_time = (!empty($this->input->post("merchant_show_time")))?$this->input->post("merchant_show_time"):0;
+			$used_admin_driver = (!empty($this->input->post("used_admin_driver")))?$this->input->post("used_admin_driver"):0;
 			
 			$date_created = new \MongoDB\BSON\UTCDateTime(time()*1000);
 			$data = array(
@@ -330,6 +341,7 @@ class Setting extends CI_Controller {
 					 'pre_order' =>(int)$pre_order,
 					 'dinein_open_table_enable' =>(int)$dinein_open_table_enable,
 					 'merchant_show_time' =>(int)$merchant_show_time,
+					 'used_admin_driver' =>(int)$used_admin_driver,
 					 'restricted_from' => (!empty($this->input->post("restricted_from")) || $this->input->post("restricted_from")!='00:00:00')? date("H:i", strtotime($this->input->post("restricted_from"))):'00:00:00',
 					 'restricted_to' => (!empty($this->input->post("restricted_to")) || $this->input->post("restricted_to")!='00:00:00')? date("H:i", strtotime($this->input->post("restricted_to"))):'00:00:00',
 					 'store_time'=>[],

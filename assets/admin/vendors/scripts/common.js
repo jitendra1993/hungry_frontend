@@ -578,6 +578,7 @@ $(function () {
 		var contact_name =  $.trim($('#contact_name').val());
 		var contact_phone =  $.trim($('#contact_phone').val());
 		var contact_email =  $.trim($('#contact_email').val());
+		var store_category =  $.trim($('#store_category').val());
 		var country =  $.trim($('#country').val());
 		var state =  $.trim($('#state').val());
 		var city =  $.trim($('#city').val());
@@ -655,7 +656,19 @@ $(function () {
 				$('.errContactEmail').html('');
 			}
 		}
-			
+		
+		if(store_category=='')
+		{
+			$('#store_category').addClass('form-control-danger');
+			$('#store_category').focus();
+			$('.errStoreCategory').html('Store category can\'t be blank.');
+			return false;
+		}else{
+			$('#store_category').addClass('form-control-success');
+			$('#store_category').removeClass('form-control-danger');
+			$('.errStoreCategory').html('');
+		}
+		
 		if(country=='')
 		{
 			$("#country").next("span.select2-container").find("span.select2-selection--single").css('border-color','#dc3545'); 
@@ -1716,6 +1729,8 @@ $(function () {
 		var city =  $.trim($('#city').val());
 		var pincode =  $.trim($('#pincode').val());
 		var address =  $.trim($('#address').val());	
+		var driver_delivery_coverd =  $.trim($('#driver_delivery_coverd').val());	
+		var driver_distance_type =  $.trim($('#driver_distance_type').val());	
 		if(name=='')
 		{
 			$('#name').addClass('form-control-danger');
@@ -1807,6 +1822,19 @@ $(function () {
 			$('.errAddress').html('');
 		}
 		
+		if(driver_delivery_coverd=='')
+		{
+			$('#driver_delivery_coverd').addClass('form-control-danger');
+			$('#driver_delivery_coverd').focus();
+			$('.err_driver_delivery_coverd').html('Driver delivery coverd can\'t be blank.');
+			return false;
+		}else{
+			$('#driver_delivery_coverd').addClass('form-control-success');
+			$('#driver_delivery_coverd').removeClass('form-control-danger');
+			$('.err_driver_delivery_coverd').html('');
+		}
+
+
 		if(username=='')
 		{
 			$('#username').addClass('form-control-danger');

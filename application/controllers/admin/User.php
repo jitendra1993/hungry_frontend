@@ -139,6 +139,7 @@ class User extends CI_Controller {
 			$this->form_validation->set_rules('pincode', 'Pincode', 'trim|required');
 			$this->form_validation->set_rules('address', 'Address', 'trim|required');
 			$this->form_validation->set_rules('username', 'Username', 'trim|required|valid_email');
+			$this->form_validation->set_rules('driver_delivery_coverd', 'Driver delivery coverd ', 'trim|required');
 			if(empty($id)){
 				$this->form_validation->set_rules('password', 'New Password', 'trim|required|min_length[3]');
 				$this->form_validation->set_rules('c_password', 'Confirm Password', 'trim|required|min_length[3]|matches[password]');
@@ -180,7 +181,8 @@ class User extends CI_Controller {
 						'city_id' => (int)$city[1],
 						'address' => htmlspecialchars(strip_tags($this->input->post('address'))),
 						'pincode' => htmlspecialchars(strip_tags($this->input->post('pincode'))),
-						'cordinate'=>array('latitude'=>'','longitude'=>''),
+						'driver_delivery_coverd' => htmlspecialchars(strip_tags($this->input->post('driver_delivery_coverd'))),
+						'driver_distance_type' => htmlspecialchars(strip_tags($this->input->post('driver_distance_type'))),
 						'status' =>(int)$this->input->post("status"),
 						'is_online' =>(int)$this->input->post("is_online"),
 						"mail_status"  =>1,
@@ -188,6 +190,7 @@ class User extends CI_Controller {
 						"added_by_role"  => (int)$this->session->userdata('role_master_tbl_id'),
 						"added_by_id"  => $this->session->userdata('user_id'),
 						"is_free"  => (int)1,
+						'location' => array('type'=>'Point','coordinates'=> [28.412894,77.311299]),
 						'added_date'=> date('d-m-Y H:i:s'),
 						'updated_date'=>date('d-m-Y H:i:s'),
 						'added_date_timestamp'=>time()*1000,
@@ -202,10 +205,12 @@ class User extends CI_Controller {
 						unset($user_master['added_date'],$user_master['added_date_timestamp'],$user_master['added_date_iso'],$user_master['hash'],$user_master['password'],$user_master['role_master_tbl_id'],$user_master['cordinate'],$user_master['added_by_role'],$user_master['added_by_id'],$user_master['is_free']);
 						$user_id = $id;
 						$result = $this->store_model->updateClient($user_master,$user_id,'hash','user_master');
+						$this->user_model->createIndex();
 						$this->session->set_flashdata('msg_success', 'You have updated driver info successfully!');
 						redirect(base_url('admin/user/view'));
 					}else{
 						$this->store_model->addClient($user_master,'user_master');
+						$this->user_model->createIndex();
 						$this->session->set_flashdata('msg_success', 'You have added driver info successfully!');
 						redirect(base_url('admin/user/view'));
 					}

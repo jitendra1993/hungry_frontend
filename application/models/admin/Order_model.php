@@ -466,28 +466,68 @@ class Order_model extends CI_Model{
 		echo 1;
 	}
 
-	public function getDriver(){
+	public function getStoreSettingById(){
+		$user_id = $this->session->userdata('user_id');
+		$cond = array('user_hash_id'=> $user_id);
+		$projection = array('projection' =>['_id'=>0,'used_admin_driver'=>1,'merchant_delivery_coverd'=>1,'merchant_distance_type'=>1]);
+		$admin_info = $this->db->store_setting_master->findOne($cond,$projection);
+		return $result = (object) $admin_info;
+	}
 
+	public function getStoreInfoById(){
+		$user_id = $this->session->userdata('user_id');
+		$cond = array('user_hash_id'=> $user_id);
+		$projection = array('projection' =>['_id'=>0,'user_hash_id'=>1,'location'=>1]);
+		$admin_info = $this->db->merchant_info_master->findOne($cond,$projection);
+		return $result = (object) $admin_info;
+	}
+
+	public function getAdminDriver($adminSetting){
+
+		$adminDetail = $this->fetchAdminId();
+		$adminid = $adminDetail->hash;
 		$match = [];
-		$match['$match']['status']=array('$nin'=>array(2));
+		$match['$match']['status']=array('$in'=>array(1));
 		$match['$match']['role_master_tbl_id']=array('$in'=>array(3));
 		$match['$match']['is_online']=1;
+		$match['$match']['is_free']=array('$in'=>array(1,2)); //1 free , 2 partial fee
+		$match['$match']['added_by_id']=array('$in'=>array($adminid));
+		$adminInfo =[];
+		$adminInfo = $this->getStoreInfoById();
+		$merchant_delivery_coverd = (float)$adminSetting['merchant_delivery_coverd'];
+		$merchant_distance_type = $adminSetting['merchant_distance_type'];
+		$max_distance = ($merchant_distance_type=='mi')?$merchant_delivery_coverd*1610:$merchant_delivery_coverd*1000;
 
-		if ($this->session->userdata('role_master_tbl_id')==2) {
-			$adminDetail = $this->fetchAdminId();
-			$user_id = $this->session->userdata('user_id');
-			$match['$match']['role_master_tbl_id']=array('$in'=>array(3));
-			$match['$match']['added_by_id']=array('$in'=>array($user_id,$adminDetail->hash));
+		if(!empty($adminInfo['location']['coordinates'])){
+			$loc = $adminInfo['location']['coordinates'];
+			$latitude = (float)$loc[0];
+			$longitude = (float)$loc[1];
+		}else{
+			$latitude = 0;
+			$longitude = 0;
 		}
 
 		$ops = array(
+			array(
+				'$geoNear'=> array(
+					'near'=> array(
+						'type'=> 'Point',
+						'coordinates'=> [$latitude,$longitude]
+					),
+					'distanceField'=> 'calculatedDistance',
+					//'maxDistance'=> $max_distance,
+					'spherical'=> true
+				)
+			), 
 			array(
 				'$lookup' => array(
 					"from" => "master_driver_order",
 					"localField" => "hash",// filed in matched collection
 					"foreignField" => "driver_user_id", //filedin current collection
 					'pipeline' => [
-									['$match'=> ["order_assigned"=>0]],
+									['$match'=> 
+										["order_assigned"=>0,'driver_order_status'=>array('$in'=>array(2))],
+									],
 									['$project' => ['_id'=>0,'hash'=>1]]
 								],
 					"as" => "driver_order"
@@ -501,7 +541,68 @@ class Order_model extends CI_Model{
 				'status'=>1,
 				'is_online'=>1,
 				'is_free'=>1,
-				'driver_order'=>'$driver_order'
+				'driver_order'=>'$driver_order',
+				'calculatedDistance'=>1
+				]
+			),
+			['$sort' => ['name' => 1]]
+		);
+		$results = $this->db->user_master->aggregate($ops);
+		$rr = [];
+		foreach($results as $result) {
+			$rr[] = $result;
+		}
+		echo '<pre>';
+		print_r($rr);
+		echo '</pre>';
+		die;
+		return $rr;
+
+	}
+
+	public function getDriver(){
+
+		$match = [];
+		$match['$match']['status']=array('$in'=>array(1));
+		$match['$match']['role_master_tbl_id']=array('$in'=>array(3));
+		$match['$match']['is_online']=1;
+		$adminInfo =[];
+		
+		$adminSetting = $this->getStoreSettingById();
+		if($adminSetting['used_admin_driver']==1){
+			$this->getAdminDriver($adminSetting);
+		}
+			$user_id = $this->session->userdata('user_id');
+			$match['$match']['role_master_tbl_id']=array('$in'=>array(3));
+			$match['$match']['added_by_id']=array('$in'=>array($user_id));
+		
+	
+		
+		$ops = array(
+			array(
+				'$lookup' => array(
+					"from" => "master_driver_order",
+					"localField" => "hash",// filed in matched collection
+					"foreignField" => "driver_user_id", //filedin current collection
+					'pipeline' => [
+									['$match'=> 
+										["order_assigned"=>0,'driver_order_status'=>array('$in'=>array(2))],
+									],
+									['$project' => ['_id'=>0,'hash'=>1]]
+								],
+					"as" => "driver_order"
+				)
+			),
+			$match,
+			array('$project' =>[
+				'_id'=>0,
+				'hash'=>1,
+				'name'=>1,
+				'status'=>1,
+				'is_online'=>1,
+				'is_free'=>1,
+				'driver_order'=>'$driver_order',
+				'calculatedDistance'=>1
 				]
 			),
 			['$sort' => ['name' => 1]]
@@ -531,7 +632,7 @@ class Order_model extends CI_Model{
 	}
 
 	public function checkOrderInvitaion($order_id){
-		$results = $this->db->master_driver_order->find(array('order_id'=>$order_id),array('projection' =>['_id'=>0,'driver_user_id'=>1]));
+		$results = $this->db->master_driver_order->find(array('order_id'=>$order_id),array('projection' =>['_id'=>0,'driver_user_id'=>1,'order_assigned'=>1,'driver_order_status'=>1]));
 		$rr = [];
 		foreach($results as $result) {
 			$rr[] = $result;
@@ -539,7 +640,7 @@ class Order_model extends CI_Model{
 		return $rr;
 	}
 
-	public function getOrderInvitedDriverDetail($order_id){
+	public function getOrderInvitedDriverDetail($order_id){ //used in order detail popup
 
 		$match = [];
 		$match['$match']['status']=array('$nin'=>array(2));

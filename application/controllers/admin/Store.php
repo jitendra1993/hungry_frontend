@@ -6,6 +6,7 @@ class Store extends CI_Controller {
 		parent::__construct();
 			
 		$this->load->model('admin/store_model');
+		$this->load->model('admin/user_model');
 		$this->load->model('admin_model');
 		if (!$this->session->userdata('user_id')) {
 			redirect('admin'); 
@@ -215,6 +216,7 @@ class Store extends CI_Controller {
 							'city_id' => (int)$city[1],
 							'address' => htmlspecialchars(strip_tags($this->input->post('address'))),
 							'pincode' => htmlspecialchars(strip_tags($this->input->post('pincode'))),
+							'location' => array('type'=>'Point','coordinates'=> [28.412894,77.311299]),
 							'about' => htmlspecialchars(strip_tags($this->input->post('about'))),
 							'logo' => $this->input->post('old_logo'),
 							'favicon' => '',
@@ -253,6 +255,7 @@ class Store extends CI_Controller {
 							'status' =>(int)$this->input->post("status"),
 							"mail_status"  =>1,
 							"mobile_status"  => 1,
+							'location' => array('type'=>'Point','coordinates'=> [28.412894,77.311299]),
 							'added_date'=> date('d-m-Y H:i:s'),
 							'updated_date'=>date('d-m-Y H:i:s'),
 							'added_date_timestamp'=>time()*1000,
@@ -280,13 +283,16 @@ class Store extends CI_Controller {
 							$user_id = $id;
 							$result = $this->store_model->updateClient($user_master,$user_id,'hash','user_master');
 							$result = $this->store_model->updateClient($data,$id,'user_hash_id','merchant_info_master');
-							
+							$this->store_model->createIndex();
+							$this->user_model->createIndex();
 							$this->session->set_flashdata('msg_success', 'You have updated store info successfully!');
 							redirect(base_url('admin/store/view'));
 						}else{
 							$this->store_model->addClient($user_master,'user_master');
 							$result = $this->store_model->addClient($data,'merchant_info_master');
 							$result = $this->store_model->addClient($setting,'store_setting_master');
+							$this->store_model->createIndex();
+							$this->user_model->createIndex();
 							$this->session->set_flashdata('msg_success', 'You have added store info successfully!');
 							redirect(base_url('admin/store/view'));
 						}

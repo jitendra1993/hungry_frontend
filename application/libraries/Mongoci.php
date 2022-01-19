@@ -34,6 +34,7 @@ class Mongoci {
 				$options = array('username'=>$this->username, 'password'=>$this->password);
 			}
 			//$this->connect = $this->db = new MongoDB\Driver\Manager($dns, $options);
+			//$dns =  'mongodb+srv://'.$this->username.':'.urlencode($this->password).'@'.$this->hostname.'/'.$this->database.'?retryWrites=true&w=majority';
 			$con = new MongoDB\Client($dns, $options);
 			$this->db = $con->{$this->database};
 			// echo '<pre>';

@@ -35,6 +35,7 @@
 			<?php echo form_error('state', '<span>', '</span><br>'); ?>
 			<?php echo form_error('city', '<span>', '</span><br>'); ?>
 			<?php echo form_error('pincode', '<span>', '</span><br>'); ?>
+			<?php echo form_error('driver_delivery_coverd', '<span>', '</span><br>'); ?>
 			<?php echo form_error('address', '<span>', '</span><br>'); ?>
 			<?php echo form_error('username', '<span>', '</span><br>'); ?>
         </div>
@@ -141,6 +142,21 @@
 		</div>
 	</div>
 	
+	<div class="form-group row">
+		<label class="col-sm-12 col-md-2 col-form-label">Delivery Distance Covered</label>
+		<div class="col-sm-12 col-md-6">
+			<input type="text" name="driver_delivery_coverd" id="driver_delivery_coverd"  class="form-control" placeholder="Delivery Distance Covered" value="<?php echo isset($driver->driver_delivery_coverd)?set_value('driver_delivery_coverd',html_entity_decode($driver->driver_delivery_coverd)):set_value('driver_delivery_coverd'); ?>" onkeypress="return isNumber(event)" maxlength="3">
+			<div class="has-danger form-control-feedback err_driver_delivery_coverd"></div>
+		</div>
+
+		<div class="col-sm-12 col-md-4" >
+		<select class="form-control" name="driver_distance_type" id="driver_distance_type" >
+			<option value="mi" <?php echo (isset($driver->driver_distance_type) && $driver->driver_distance_type=='mi')?'selected':''; ?>>Miles</option> 
+			<option value="km" <?php echo (isset($driver->driver_distance_type) && $driver->driver_distance_type=='km')?'selected':''; ?>>Kilometers</option> 
+		</select>
+		</div>
+	</div>
+
 	<div class="form-group row">
 		<label class="col-sm-12 col-md-2 col-form-label">Username</label>
 		<div class="col-sm-12 col-md-10">

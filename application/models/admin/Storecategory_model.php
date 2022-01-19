@@ -25,20 +25,20 @@ class Storecategory_model extends CI_Model{
 			}
 			if(!empty($filter['filter_from_date']) && !empty($filter['filter_to_date']))
 			{
-				$from_date = date('Y-m-d',strtotime($filter['filter_from_date']));
-				$to_date = date('Y-m-d',strtotime($filter['filter_to_date']));
-				$match['added_date_timestamp']=['$gte'=>strtotime($from_date)*1000,'$lt'=>strtotime($to_date)*1000];
+				$from_date = date('Y-m-d 00:00:00',strtotime($filter['filter_from_date']));
+				$to_date = date('Y-m-d 23:59:59',strtotime($filter['filter_to_date']));
+				$match['added_date_timestamp']=['$gte'=>strtotime($from_date)*1000,'$lte'=>strtotime($to_date)*1000];
 				
 			}
 			if(!empty($filter['filter_from_date']) && empty($filter['filter_to_date']))
 			{
-				$from_date = date('Y-m-d',strtotime($filter['filter_from_date']));
+				$from_date = date('Y-m-d 00:00:00',strtotime($filter['filter_from_date']));
 				$match['added_date_timestamp']=['$gte'=>strtotime($from_date)*1000];
 			}
 			
 			if(empty($filter['filter_from_date']) && !empty($filter['filter_to_date']))
 			{
-				$to_date = date('Y-m-d',strtotime($filter['filter_to_date']));
+				$to_date = date('Y-m-d 23:59:59',strtotime($filter['filter_to_date']));
 				$match['added_date_timestamp']=['$lte'=>strtotime($from_date)*1000];
 			}
 			
@@ -71,20 +71,20 @@ class Storecategory_model extends CI_Model{
 			}
 			if(!empty($filter['filter_from_date']) && !empty($filter['filter_to_date']))
 			{
-				$from_date = date('Y-m-d',strtotime($filter['filter_from_date']));
-				$to_date = date('Y-m-d',strtotime($filter['filter_to_date']));
-				$match['added_date_timestamp']=['$gte'=>strtotime($from_date)*1000,'$lt'=>strtotime($to_date)*1000];
+				$from_date = date('Y-m-d 00:00:00',strtotime($filter['filter_from_date']));
+				$to_date = date('Y-m-d 23:59:59',strtotime($filter['filter_to_date']));
+				$match['added_date_timestamp']=['$gte'=>strtotime($from_date)*1000,'$lte'=>strtotime($to_date)*1000];
 				
 			}
 			if(!empty($filter['filter_from_date']) && empty($filter['filter_to_date']))
 			{
-				$from_date = date('Y-m-d',strtotime($filter['filter_from_date']));
+				$from_date = date('Y-m-d 00:00:00',strtotime($filter['filter_from_date']));
 				$match['added_date_timestamp']=['$gte'=>strtotime($from_date)*1000];
 			}
 			
 			if(empty($filter['filter_from_date']) && !empty($filter['filter_to_date']))
 			{
-				$to_date = date('Y-m-d',strtotime($filter['filter_to_date']));
+				$to_date = date('Y-m-d 23:59:59',strtotime($filter['filter_to_date']));
 				$match['added_date_timestamp']=['$lte'=>strtotime($from_date)*1000];
 			}
 			
@@ -96,7 +96,7 @@ class Storecategory_model extends CI_Model{
 			}
 		}
 		
-		$results = $this->db->store_category->find($match,['skip' => $data['start']],['limit' => $data['limit']],['sort' => ['name' => -1]]);
+		$results = $this->db->store_category->find($match,['skip' => $data['start'],'limit' => $data['limit'],['sort' => ['name' => -1]]);
 		$rr = [];
 		foreach($results as $result) {
 			$rr[] = $result;
