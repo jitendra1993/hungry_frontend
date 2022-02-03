@@ -6,7 +6,7 @@
 			</div>
 			<nav aria-label="breadcrumb" role="navigation">
 				<ol class="breadcrumb">
-					<li class="breadcrumb-item"><a href="<?=base_url('admin/dashboard')?>">Home</a></li>
+					<li class="breadcrumb-item"><a href="<?=base_url('admin/dashboard')?>">Home sssssss</a></li>
 					<li class="breadcrumb-item"><a href="<?=base_url('admin/banner/view')?>">Banner</a></li>
 					<li class="breadcrumb-item active" aria-current="page"><?=isset($banner->id) ? 'Edit':'Add'?> Banner</li>
 				</ol>
