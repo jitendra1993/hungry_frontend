@@ -189,7 +189,6 @@ class User extends CI_Controller {
 						"mobile_status"  => 1,
 						"added_by_role"  => (int)$this->session->userdata('role_master_tbl_id'),
 						"added_by_id"  => $this->session->userdata('user_id'),
-						"is_free"  => (int)1,
 						'location' => array('type'=>'Point','coordinates'=> [28.412894,77.311299]),
 						'added_date'=> date('d-m-Y H:i:s'),
 						'updated_date'=>date('d-m-Y H:i:s'),
@@ -202,7 +201,7 @@ class User extends CI_Controller {
 					);
 					
 					if(!empty($id)){
-						unset($user_master['added_date'],$user_master['added_date_timestamp'],$user_master['added_date_iso'],$user_master['hash'],$user_master['password'],$user_master['role_master_tbl_id'],$user_master['cordinate'],$user_master['added_by_role'],$user_master['added_by_id'],$user_master['is_free']);
+						unset($user_master['added_date'],$user_master['added_date_timestamp'],$user_master['added_date_iso'],$user_master['hash'],$user_master['password'],$user_master['role_master_tbl_id'],$user_master['cordinate'],$user_master['added_by_role'],$user_master['added_by_id']);
 						$user_id = $id;
 						$result = $this->store_model->updateClient($user_master,$user_id,'hash','user_master');
 						$this->user_model->createIndex();

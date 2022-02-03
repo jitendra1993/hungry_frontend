@@ -278,12 +278,6 @@ class Order_model extends CI_Model{
 		return true;
 	}
 
-	public function updateDriverFreeStatus($data,$id){
-		$cond = array('hash'=>array('$in'=>$id));
-		$this->db->user_master->updateMany($cond,array('$set'=>$data));
-		return true;
-	}
-
 	public function getStore(){
 		
 		$match = [];
@@ -469,7 +463,7 @@ class Order_model extends CI_Model{
 	public function getStoreSettingById(){
 		$user_id = $this->session->userdata('user_id');
 		$cond = array('user_hash_id'=> $user_id);
-		$projection = array('projection' =>['_id'=>0,'used_admin_driver'=>1,'merchant_delivery_coverd'=>1,'merchant_distance_type'=>1]);
+		$projection = array('projection' =>['_id'=>0,'user_hash_id'=>1,'used_admin_driver'=>1,'merchant_delivery_coverd'=>1,'merchant_distance_type'=>1]);
 		$admin_info = $this->db->store_setting_master->findOne($cond,$projection);
 		return $result = (object) $admin_info;
 	}
@@ -482,30 +476,16 @@ class Order_model extends CI_Model{
 		return $result = (object) $admin_info;
 	}
 
-	public function getAdminDriver($adminSetting){
+	public function distanceBetweenStoreCustomer($storeSetting,$latitude,$longitude,$order_id){
 
-		$adminDetail = $this->fetchAdminId();
-		$adminid = $adminDetail->hash;
-		$match = [];
-		$match['$match']['status']=array('$in'=>array(1));
-		$match['$match']['role_master_tbl_id']=array('$in'=>array(3));
-		$match['$match']['is_online']=1;
-		$match['$match']['is_free']=array('$in'=>array(1,2)); //1 free , 2 partial fee
-		$match['$match']['added_by_id']=array('$in'=>array($adminid));
-		$adminInfo =[];
-		$adminInfo = $this->getStoreInfoById();
-		$merchant_delivery_coverd = (float)$adminSetting['merchant_delivery_coverd'];
-		$merchant_distance_type = $adminSetting['merchant_distance_type'];
+		$store_id = $storeSetting['user_hash_id'];
+		$merchant_delivery_coverd = (float)$storeSetting['merchant_delivery_coverd'];
+		$merchant_distance_type = $storeSetting['merchant_distance_type'];
 		$max_distance = ($merchant_distance_type=='mi')?$merchant_delivery_coverd*1610:$merchant_delivery_coverd*1000;
 
-		if(!empty($adminInfo['location']['coordinates'])){
-			$loc = $adminInfo['location']['coordinates'];
-			$latitude = (float)$loc[0];
-			$longitude = (float)$loc[1];
-		}else{
-			$latitude = 0;
-			$longitude = 0;
-		}
+		$match = [];
+		$match['$match']['restaurant_id']=$store_id;
+		$match['$match']['order_id']=$order_id;
 
 		$ops = array(
 			array(
@@ -514,8 +494,61 @@ class Order_model extends CI_Model{
 						'type'=> 'Point',
 						'coordinates'=> [$latitude,$longitude]
 					),
-					'distanceField'=> 'calculatedDistance',
-					//'maxDistance'=> $max_distance,
+					'distanceField'=> 'DistanceBetweenStoreCustomer',
+					'spherical'=> true,
+				)
+			), 
+			$match ,
+			array('$project' =>[
+				'_id'=>0,
+				'DistanceBetweenStoreCustomer'=>1
+				]
+			)
+		);
+
+		$results = $this->db->master_order_tbl->aggregate($ops);
+		$rr = [];
+		foreach($results as $result) {
+			$rr = $result;
+		}
+		return (count($rr)>0)?round($rr['DistanceBetweenStoreCustomer'],2):10000;
+	}
+
+	public function getAdminDriver($storeSetting,$order_id){
+
+		
+		$adminDetail = $this->fetchAdminId();
+		$adminid = $adminDetail->hash;
+		$match = [];
+		$match['$match']['status']=array('$in'=>array(1));
+		$match['$match']['role_master_tbl_id']=array('$in'=>array(3));
+		$match['$match']['is_online']=1;
+		$match['$match']['added_by_id']=array('$in'=>array($adminid));
+		$match['$match']['driver_order.order_assigned']=0;
+		$storeInfo =[];
+		$storeInfo = $this->getStoreInfoById();
+		$merchant_delivery_coverd = (float)$storeSetting['merchant_delivery_coverd']+2;
+		$merchant_distance_type = $storeSetting['merchant_distance_type'];
+		$max_distance = ($merchant_distance_type=='mi')?$merchant_delivery_coverd*1610:$merchant_delivery_coverd*1000;
+
+		if(!empty($storeInfo['location']['coordinates'])){
+			$loc = $storeInfo['location']['coordinates'];
+			$latitude = (float)$loc[0];
+			$longitude = (float)$loc[1];
+		}else{
+			$latitude = 0;
+			$longitude = 0;
+		}
+		$distanceBetweenStoreCustomer = $this->distanceBetweenStoreCustomer($storeSetting,$latitude,$longitude,$order_id);
+		$ops = array(
+			array(
+				'$geoNear'=> array(
+					'near'=> array(
+						'type'=> 'Point',
+						'coordinates'=> [$latitude,$longitude]
+					),
+					'distanceField'=> 'DistanceBetweenStoreDriver',
+					'maxDistance'=> $max_distance,
 					'spherical'=> true
 				)
 			), 
@@ -525,52 +558,80 @@ class Order_model extends CI_Model{
 					"localField" => "hash",// filed in matched collection
 					"foreignField" => "driver_user_id", //filedin current collection
 					'pipeline' => [
-									['$match'=> 
-										["order_assigned"=>0,'driver_order_status'=>array('$in'=>array(2))],
-									],
-									['$project' => ['_id'=>0,'hash'=>1]]
+									['$match'=> ['order_assigned'=>0,'driver_order_status'=>array('$in'=>array(1,2,3,5))]],
+									['$project' => ['_id'=>0,'order_assigned'=>1,'hash'=>1,'order_id'=>1,'driver_user_id'=>1,"driver_order_status"=>1]]
 								],
 					"as" => "driver_order"
 				)
 			),
 			$match,
 			array('$project' =>[
+					'_id'=>0,
+					'hash'=>1,
+					'name'=>1,
+					'status'=>1,
+					'is_online'=>1,
+					'driver_delivery_coverd'=>'$driver_delivery_coverd',
+					'driver_distance_type'=>1,
+					'driver_order'=>'$driver_order',
+					'DistanceBetweenStoreDriver'=>1,
+				]
+			),
+			array('$project' =>[
 				'_id'=>0,
 				'hash'=>1,
 				'name'=>1,
 				'status'=>1,
 				'is_online'=>1,
-				'is_free'=>1,
+				//'driver_delivery_coverd'=>'$driver_delivery_coverd',
+				//'driver_distance_type'=>1,
 				'driver_order'=>'$driver_order',
-				'calculatedDistance'=>1
-				]
+				'DistanceBetweenStoreDriver'=>1,
+				'userDistanceCoveredInMeter'=>[ '$sum'=> 
+												['$multiply'=>[ 
+																['$toInt'=> '$driver_delivery_coverd' ], 
+																[
+																	'$cond' => [
+																		'if' => ['$driver_distance_type', 'mi'],
+																		'then' => 1600,
+																		'else' => 1000
+																	] 
+																] 
+															]
+												]
+											]
+							]
 			),
-			['$sort' => ['name' => 1]]
+			// array(
+			// 	'$match'=> ["userDistanceInMeter"=> ['$lte'=> 5000 ] ]
+			// ),
+			array('$limit'=>50),
+			['$sort' => ['DistanceBetweenStoreDriver' => 1]]
 		);
 		$results = $this->db->user_master->aggregate($ops);
 		$rr = [];
 		foreach($results as $result) {
-			$rr[] = $result;
+			$userDistanceCoveredInMeter = $result['userDistanceCoveredInMeter'];
+			if($userDistanceCoveredInMeter>=$distanceBetweenStoreCustomer){
+				$rr[] = $result;
+			}
 		}
-		echo '<pre>';
-		print_r($rr);
-		echo '</pre>';
-		die;
 		return $rr;
 
 	}
 
-	public function getDriver(){
+	public function getDriver($order_id){
 
 		$match = [];
 		$match['$match']['status']=array('$in'=>array(1));
 		$match['$match']['role_master_tbl_id']=array('$in'=>array(3));
 		$match['$match']['is_online']=1;
+		$match['$match']['driver_order.order_assigned']=0;
 		$adminInfo =[];
-		
+		$adminDriverRes  =[];
 		$adminSetting = $this->getStoreSettingById();
 		if($adminSetting['used_admin_driver']==1){
-			$this->getAdminDriver($adminSetting);
+			$adminDriverRes = $this->getAdminDriver($adminSetting,$order_id);
 		}
 			$user_id = $this->session->userdata('user_id');
 			$match['$match']['role_master_tbl_id']=array('$in'=>array(3));
@@ -585,10 +646,8 @@ class Order_model extends CI_Model{
 					"localField" => "hash",// filed in matched collection
 					"foreignField" => "driver_user_id", //filedin current collection
 					'pipeline' => [
-									['$match'=> 
-										["order_assigned"=>0,'driver_order_status'=>array('$in'=>array(2))],
-									],
-									['$project' => ['_id'=>0,'hash'=>1]]
+									['$match'=> ['order_assigned'=>0,'driver_order_status'=>array('$in'=>array(1,2,3,5))]],
+									['$project' => ['_id'=>0,'hash'=>1,'order_assigned'=>1,'order_id'=>1,'driver_user_id'=>1,"driver_order_status"=>1]]
 								],
 					"as" => "driver_order"
 				)
@@ -600,9 +659,7 @@ class Order_model extends CI_Model{
 				'name'=>1,
 				'status'=>1,
 				'is_online'=>1,
-				'is_free'=>1,
 				'driver_order'=>'$driver_order',
-				'calculatedDistance'=>1
 				]
 			),
 			['$sort' => ['name' => 1]]
@@ -617,7 +674,7 @@ class Order_model extends CI_Model{
 		// print_r($rr);
 		// echo '</pre>';
 		// die;
-		return $rr;
+		return ['adminDriver'=>$adminDriverRes,'storeDriver'=>$rr];
 		
 	}
 
@@ -629,15 +686,6 @@ class Order_model extends CI_Model{
 	public function addOrderForDriver($data){
 		$this->db->master_driver_order->insertOne($data);
 		return true;
-	}
-
-	public function checkOrderInvitaion($order_id){
-		$results = $this->db->master_driver_order->find(array('order_id'=>$order_id),array('projection' =>['_id'=>0,'driver_user_id'=>1,'order_assigned'=>1,'driver_order_status'=>1]));
-		$rr = [];
-		foreach($results as $result) {
-			$rr[] = $result;
-		}
-		return $rr;
 	}
 
 	public function getOrderInvitedDriverDetail($order_id){ //used in order detail popup
@@ -654,7 +702,7 @@ class Order_model extends CI_Model{
 					"foreignField" => "driver_user_id", //filedin current collection
 					'pipeline' => [
 									['$match'=> ["order_id"=>$order_id]],
-									['$project' => ['_id'=>0,'hash'=>1]]
+									['$project' => ['_id'=>0,'hash'=>1,'driver_order_status'=>1]]
 								],
 					"as" => "driver_order"
 				)
@@ -665,7 +713,7 @@ class Order_model extends CI_Model{
 				'_id'=>0,
 				'name'=>1,
 				'mobile'=>1,
-				'order_id'=>'$driver_order.order_id'
+				'driver_order_status'=>'$driver_order.driver_order_status',
 				]
 			),
 			['$sort' => ['name' => 1]]
@@ -678,6 +726,24 @@ class Order_model extends CI_Model{
 		}
 		
 		return $rr;
+		
+	}
+
+	public function checkDriverAssignedAjax($order_id){
+		return  $this->db->master_order_tbl->count(array('order_id'=>$order_id,'driver_id'=>['$nin'=>['',NULL]]));
+	}
+
+	public function assignedDriverDetail($order_id,$driver_id){
+		$results = $this->db->user_master->findOne(array('hash'=>$driver_id),array('projection' =>['_id'=>0,'hash'=>1,'name'=>1,'email'=>1,'mobile'=>1,'added_by_role'=>1,'address'=>1,'pincode'=>1,'status'=>1,'is_online'=>1]));
+		return (Object)$results;
+	}
+
+	public function removeDriver($order_id,$driver_id){
+		
+		$this->db->master_order_tbl->updateOne(['order_id'=>$order_id],array('$set'=>array('driver_status'=>2,'driver_id'=>'')),array("multi"=>false));
+		$this->db->master_driver_order->updateMany(['order_id'=>$order_id],array('$set'=>array('order_assigned'=>0)));
+		$this->db->master_driver_order->updateOne(['order_id'=>$order_id,'driver_user_id'=>$driver_id],array('$set'=>array('driver_order_status'=>5)),array("multi"=>false));// remove driver
+		return 1;
 		
 	}
 		

@@ -77,7 +77,7 @@ class Order extends CI_Controller {
 		$data['limit'] = $rowperpage; 
 		$data['start'] =$rowno; 
 		$view['orders'] = $this->order_model->getMasterOrder($filter,$data);
-		$view['driver'] = $this->order_model->getDriver();
+		//$view['driver'] = $this->order_model->getDriver();
 		$this->load->view('admin/template_admin',$view);
 	}
 
@@ -225,13 +225,29 @@ class Order extends CI_Controller {
 															<tr>
 																<th>Name</th>
 																<th>Mobile</th>
+																<th>Status</th>
 															</tr>
 																<?php 
 																foreach($getOrderInvitedDriverDetail as $history){
+
+																	if($history->driver_order_status == 1){
+																		$sss = 'Accepted';
+
+																	}else if($history->driver_order_status == 2){
+																		$sss = 'Pending';
+
+																	}else if($history->driver_order_status == 3){
+																		$sss = 'Rejected';
+
+																	}else if($history->driver_order_status == 4){
+																		$sss = 'Deliverd';
+																	}
+																	
 																	echo '
 																	<tr>
 																		<td>'.$history->name.'</td>
 																		<td>'.$history->mobile.'</td>
+																		<td>'.$sss.'</td>
 																	</tr>	';
 																}
 																?>
@@ -648,7 +664,7 @@ class Order extends CI_Controller {
 		$data['limit'] = $rowperpage; 
 		$data['start'] =$rowno; 
 		$view['orders'] = $this->order_model->getMasterOrder($filter,$data);
-		$view['driver'] = $this->order_model->getDriver();
+		//$view['driver'] = $this->order_model->getDriver();
 		$this->load->view('admin/template_admin',$view);
 	}		
 
@@ -661,10 +677,10 @@ class Order extends CI_Controller {
 		$delivery_time = (!empty($this->input->post("delivery_time")))?date("H:i", strtotime($this->input->post("delivery_time"))):'00:00:00';
 		$msg = 'Order status has been successfully changed.';
 		$data = array('status' => $new_status,'admin_order_remark'=>$order_remark,'admin_delivery_time'=>$delivery_time);
+		
 		if($driver!='' && !empty($driver) && $driver!=0 && count($driver)>0)
 		{
 			$data['driver_status']=(int)2; //sending invitation for order accapt.  0 default,1 driver assigned,2 sending inivitation
-			$this->order_model->updateDriverFreeStatus(array('is_free'=>(int)2),$driver); //,2 pending order or partial occupied
 
 			$date_created = new \MongoDB\BSON\UTCDateTime(time()*1000);
 			foreach($driver as $driverId){
@@ -767,7 +783,7 @@ class Order extends CI_Controller {
 		$data['limit'] = $rowperpage; 
 		$data['start'] =$rowno; 
 		$view['orders'] = $this->order_model->getMasterOrder($filter,$data);
-		$view['driver'] = $this->order_model->getDriver();
+		//$view['driver'] = $this->order_model->getDriver();
 		$this->load->view('admin/template_admin',$view);
 	}
 
@@ -858,9 +874,9 @@ class Order extends CI_Controller {
 			
 	}
 
-	public function checkOrderInvitaion(){
+	public function getDriverAjax(){
 		$order_id = $this->input->post('order_id');
-		$data = $this->order_model->checkOrderInvitaion($order_id);
+		$data = $this->order_model->getDriver($order_id);
 		$response = array(
 			'status'=>'1',
 			'data'=>$data,
@@ -869,4 +885,102 @@ class Order extends CI_Controller {
 		header('Content-Type: application/json');
 		echo json_encode($response);
 	}
+
+	public function checkDriverAssignedAjax(){
+		$order_id = $this->input->post('order_id');
+		$data = $this->order_model->checkDriverAssignedAjax($order_id);
+		$response = array(
+			'status'=>'1',
+			'data'=>$data,
+			'redirect'=>'0'
+		);
+		header('Content-Type: application/json');
+		echo json_encode($response);
+	}
+
+	public function assignedDriverDetail(){
+		$order_id = $this->input->post('orderid');
+		$driver_id = $this->input->post('driver_id');
+		$data = $this->order_model->assignedDriverDetail($order_id,$driver_id);
+		//print_r($data);
+		?>
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="exampleModalLabel">Driver Details</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<input type="hidden" name="order_id" id="remove_driver_order_id" value="<?php echo $order_id;?>">
+				<input type="hidden" name="driver_id" id="remove_driver_driver_id" value="<?php echo $driver_id;?>">
+				<div class="modal-body">
+					<div class="col-md-12 form-group p_star">
+						<table class="table table-striped table-bordered">
+							<tbody>	
+								<tr>
+									<td class="width-50">Driver Name</td>
+									<td class="text-right width-50"><?php echo $data['name'];?></td>
+								</tr>
+								
+								<tr>
+									<td class="width-50">Driver Email</td>
+									<td class="text-right width-50"><?php echo $data['email'];?></td>
+								</tr>
+								
+								<tr>
+									<td class="width-50">Driver Mobile</td>
+									<td class="text-right width-50"><?php echo $data['mobile'];?></td>
+								</tr>
+
+								<tr>
+									<td class="width-50">Driver Pincode</td>
+									<td class="text-right width-50"><?php echo $data['pincode'];?></td>
+								</tr>
+
+								<tr>
+									<td class="width-50">Driver Address</td>
+									<td class="text-right width-50"><?php echo $data['address'];?></td>
+								</tr>
+
+								<tr>
+									<td class="width-50">Driver status</td>
+									<td class="text-right width-50"><?php echo ($data['status']==1)?'Active':'Inactive';?></td>
+								</tr>
+
+								<tr>
+									<td class="width-50">Driver Online</td>
+									<td class="text-right width-50"><?php echo ($data['is_online']==1)?'Online':'Offline';?></td>
+								</tr>
+								<tr>
+									<td class="width-50">Driver Added By</td>
+									<td class="text-right width-50"><?php echo ($data['added_by_role']==1)?'Admin':'Seller';?></td>
+								</tr>
+
+							</tbody>
+						</table>
+					</div>
+					<div class="col-md-12  form-group p_star">
+						<button type="button" class=" btn btn-success col-md-6 remove-driver-confirm">Remove Driver</button>
+						<button type="button" class="btn btn btn-danger col-md-5"  data-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	public function removeDriver(){
+		$order_id = $this->input->post('order_id');
+		$driver_id = $this->input->post('driver_id');
+		$data = $this->order_model->removeDriver($order_id,$driver_id);
+		$response = array(
+			'status'=>'1',
+			'data'=>$data,
+			'redirect'=>'0'
+		);
+		header('Content-Type: application/json');
+		echo json_encode($response);
+	}
+
 }

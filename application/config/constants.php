@@ -112,7 +112,8 @@ define('msg',array(
 			'update_cart_msg'=>'Cart has been successfully updated.',
 			'store_close'=>'Not accept the order',
 			'alcohol'=>'We can not deliver alcohol/cigarettes & Tobacco at this time. Please remove this product before checkout.',
-			'restaurant_delivery_time'=>'+42 minutes'
+			'restaurant_delivery_time'=>'+42 minutes',
+			'driver_assigneed'=>'Driver Assigned'
 			
 			));
 			
@@ -160,16 +161,13 @@ define('role_master',array(
 	'4'=>'User'
 ));	
 
-define('is_free',array(
-	'0'=>'Occupied',
-	'1'=>'Free',
-	'2'=>'Pending order or partial occupied'
-));	
 
 define('driver_order_status',array(
 	'1'=>'Accept',
 	'2'=>'pending/default',
-	'3'=>'Reject'
+	'3'=>'Reject',
+	'4'=>'Deliverd',
+	'5'=>'Remove Driver',
 ));	
 
 define('driver_status',array(

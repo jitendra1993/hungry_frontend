@@ -62,7 +62,7 @@ class Payment extends CI_Controller {
 				$this->session->set_flashdata('msg_success', 'You have updated cash payment option successfully!');
 				redirect(base_url('admin/payment/cash'));
 			}else{
-				$result = $this->payment_model->addPayment($product_data,'payment_option');
+				$result = $this->payment_model->addPayment($product_data,'master_payment_option');
 				if($result){
 					$this->session->set_flashdata('msg_success', 'You have added new cash payment option successfully!');
 					redirect(base_url('admin/payment/cash'));

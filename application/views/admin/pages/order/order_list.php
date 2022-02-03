@@ -171,16 +171,31 @@
 								<td class="status_<?php echo $order->order_id; ?>"><?php echo $status;?></td>
 								<td>
 									<?php 
-									if($order->settled==0 && $this->session->userdata('role_master_tbl_id')==2){ ?>
+									if($order->settled==0 && $this->session->userdata('role_master_tbl_id')==2){
+										
+										$dispalyDriver= 'none';
+										$dispalyEdit= '';
+										$driver_id='';
+										if($order->order_type==2 && isset($order->driver_id) && $order->driver_id!=''){
+											
+											$dispalyDriver= '';
+											$dispalyEdit= 'none';
+											$driver_id = $order->driver_id;
+
+										}
+										?>
+										<a href="javascript:void(0)" id="order_id_driver_<?php echo $order->order_id;?>"
+										data-id="<?php echo $order->order_id;?>" driver-id="<?php echo $driver_id;?>"  class="badge badge-secondary remove-driver" data-toggle="tooltip"
+										data-placement="top" title="Remove Driver" style="display:<?php echo $dispalyDriver;?>">Remove Driver</a>
+										
 										<a href="javascript:void(0)" id="order_id_status_<?php echo $order->order_id;?>"
 											data-id="<?php echo $order->order_id;?>" user-id="<?=$order->user_id?>"  current-status="<?php echo $st;?>"
 											class="badge badge-secondary change-order-status" data-order-type="<?php echo $order->order_type;?>" data-toggle="tooltip"
-											data-placement="top" title="Change Status"><i class="fa fa-pencil"></i></a>
+											data-placement="top" title="Change Status" style="display:<?php echo $dispalyEdit;?>"><i class="fa fa-pencil"></i></a><br>
 										<?php 
 									}  ?>
 									<a href="javascript:void(0)" data-id="<?=$order->order_id?>" user-id="<?=$order->user_id?>" restaurant-id="<?=$order->restaurant_id?>" 
-										class="badge badge-secondary view-order" data-toggle="tooltip" data-placement="top"
-										title="View"><i class="fa fa-eye"></i></a>
+									class="badge badge-secondary view-order" data-toggle="tooltip" data-placement="top" title="View"><i class="fa fa-eye"></i></a>
 								</td>
                      		</tr>
                      		<?php  
@@ -207,6 +222,7 @@
                     <input type='hidden' name='order_id' id="order_id" value=''>
 					<input type='hidden' name='user_id' id="user_id" value=''>
 					<input type='hidden' name='order_type' id="order_type" value=''>
+					<input type='hidden' name='popup_on' id="popup_on" value='all_order'>
                      <div class="col-md-12 form-group">
                          <select name="new_status" id="new_status" class="form-control">
 							<option value="" selected>Select Status</option>
@@ -221,32 +237,12 @@
 					
 					<div class="col-md-12 form-group toggleTime">
 						<input type='text' name='delivery_time' id="delivery_time" value="<?php echo date('h:m A',time()); ?>" class="form-control time-picker">
+						<span class="error has-danger delivery_time_error"></span>
 					</div>
 
 					<div class="col-md-12 form-group">
 						<select name="driver[]" name="driver" id="driver" class="form-control driverDropdown  selectpicker" multiple style="display:none">
 							<option value="" disabled>Select Driver</option>
-							<?php 
-							//is_free-> 0 occupied,1 free,2 pending order or partial occupied
-							foreach($driver as $singleDriver){
-								$occupied ='';
-								$disabled ='';
-								$driver_pending_order = count($singleDriver->driver_order);
-								if($singleDriver->is_free==0){
-									$occupied =' (Occupied)';
-									$disabled ='disabled';
-
-								}else if($singleDriver->is_free==1){
-									$occupied ='';
-									$disabled ='';
-
-								}else if($singleDriver->is_free==2){
-									$occupied =' (Pending Orders-'.$driver_pending_order .')';
-									$disabled ='';
-								}
-								echo '<option value="'. $singleDriver->hash.'"'.$disabled.'>'. $singleDriver->name.''.$occupied.'</option>';
-							}
-							?>
 						</select>
 					</div>
 
@@ -268,4 +264,9 @@
  <!-- Order detail view-->
  <div class="modal fade" id="viewOrderDetail" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"aria-hidden="true">
     <span class="appendOrderDetail"></span>
+ </div>
+
+ <!-- remove drive view-->
+ <div class="modal fade" id="removeDriverPopup" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"aria-hidden="true">
+    <span class="appendRemoveDriver"></span>
  </div>

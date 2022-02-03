@@ -118,6 +118,167 @@ function ValidateSingleFileUpload() {
 	}
 }
 
+function checkDriverAssigned(id){
+	var url = site_url+'admin/order/checkDriverAssignedAjax' 
+	$.ajax({
+		'type': "POST",
+		'url': url,
+		'data': { order_id: id},
+		'dataType': 'json',
+		success: function (data) {
+			$('.loading-image').hide();
+			if(data.data >= 1){
+				alert('Driver Already assigned for this order.');
+				return false
+			}else{
+				getDrivers(id)
+				$('#changeStatusModal').modal('show')
+				
+			}
+		}
+	});	
+}
+
+function getDrivers(id){
+	var url = site_url+'admin/order/getDriverAjax' 
+		$.ajax({
+		'type': "POST",
+		'url': url,
+		'data': { order_id: id},
+		'dataType': 'json',
+		success: function (data) {
+			$('.loading-image').hide();
+			var driver = data.data
+			var adminDriver = driver.adminDriver
+			var storeDriverArr = driver.storeDriver
+
+			var html ='<option value="" disabled>Select Driver</option>'
+		
+			storeDriverArr.forEach((storeDriver,index) => {
+				var store_driver_user_id = storeDriver['hash']
+				var occupied ='sss'
+				var disabled ='disabled'
+				var driverOrderIds =[]
+				var pending_order = storeDriver['driver_order'].length
+				driverOrderIds = storeDriver['driver_order'].map((driver_order) => {
+					return driver_order.order_id
+				})
+
+				var cntAcceptLength = storeDriver['driver_order'].filter(function (el){return el.driver_order_status==1}).length;
+				var cntThisOrderAcceptLength = storeDriver['driver_order'].filter(function (el){return el.driver_order_status==1 && el.order_id==id}).length;
+				var cntPendingLength = storeDriver['driver_order'].filter(function (el){return el.driver_order_status==2}).length;
+				var cntRejectLength = storeDriver['driver_order'].filter(function (el){return el.driver_order_status==3}).length;
+				var cntRemoveLength = storeDriver['driver_order'].filter(function (el){return el.driver_order_status==5 && el.order_id==id}).length;
+				
+				if(cntAcceptLength > 0){
+					occupied =' (Occupied)'
+					disabled ='disabled'
+					selected =''
+
+				}else if(cntAcceptLength == 0 && cntPendingLength == 0  && driverOrderIds.indexOf(id) == -1){
+					occupied =''
+					disabled =''
+					selected='selected'
+
+				}
+
+				else if(cntPendingLength > 0 && driverOrderIds.indexOf(id) == -1){
+					occupied =` (Pending Orders- ${cntPendingLength})`
+					disabled =''
+					selected='selected'
+
+				}
+
+				else if(cntRejectLength > 0  && driverOrderIds.indexOf(id) != -1){
+					occupied =` (Already Assigned)- Rejected`
+					disabled ='disabled'
+					selected=''
+				}
+
+				else if(cntPendingLength > 0  && driverOrderIds.indexOf(id) != -1){
+					occupied =` (Already Assigned)`
+					disabled ='disabled'
+					selected=''
+				}
+
+				
+				if(index==0){
+					html +=`<optgroup label="Seller Driver">`
+				}
+				if(cntRemoveLength == 0 && cntThisOrderAcceptLength == 0){
+					html +=`<option value="${store_driver_user_id}" ${disabled}>${storeDriver['name']} ${occupied}</option>`
+				}
+				if(index==storeDriverArr.length-1){
+					html +=`</optgroup>`
+				}
+
+			})
+
+			adminDriver.forEach((admin,index) => {
+				var driver_user_id = admin['hash']
+				var occupied ='ssss'
+				var disabled ='disabled'
+				var driverOrderIds =[]
+				
+				driverOrderIds = admin['driver_order'].map((driver_order) => {
+					return driver_order.order_id
+				})
+			
+				var cntAcceptLength = admin['driver_order'].filter(function (el){return el.driver_order_status==1}).length;
+				var cntPendingLength = admin['driver_order'].filter(function (el){return el.driver_order_status==2}).length;
+				var cntRejectLength = admin['driver_order'].filter(function (el){return el.driver_order_status==3}).length;
+				var cntRemoveLength = admin['driver_order'].filter(function (el){return el.driver_order_status==5 && el.order_id==id}).length;
+				var cntThisOrderAcceptLength = admin['driver_order'].filter(function (el){return el.driver_order_status==1 && el.order_id==id}).length;
+
+				if(cntAcceptLength > 0){
+					occupied =' (Occupied)'
+					disabled ='disabled'
+					selected =''
+
+				}else if(cntAcceptLength == 0 && cntPendingLength == 0  && driverOrderIds.indexOf(id) == -1){
+					occupied =''
+					disabled =''
+					selected='selected'
+
+				}
+
+				else if(cntPendingLength > 0 && driverOrderIds.indexOf(id) == -1){
+					occupied =` (Pending Orders- ${cntPendingLength})`
+					disabled =''
+					selected='selected'
+
+				}
+
+				else if(cntRejectLength > 0  && driverOrderIds.indexOf(id) != -1){
+					occupied =` (Already Assigned)- Rejected`
+					disabled ='disabled'
+					selected=''
+				}
+
+				else if(cntPendingLength > 0  && driverOrderIds.indexOf(id) != -1){
+					occupied =` (Already Assigned)`
+					disabled ='disabled'
+					selected=''
+				}
+
+				
+	
+				if(index==0){
+					html +=`<optgroup label="Admin Driver">`
+				}
+				if(cntRemoveLength == 0 && cntThisOrderAcceptLength == 0){
+					html +=`<option value="${driver_user_id}" ${disabled} ${selected}>${admin['name']} ${occupied}</option>`
+				}
+				if(index==adminDriver.length-1){
+					html +=`</optgroup>`
+				}
+			})
+			
+			$('.selectpicker').html(html)
+			$(".selectpicker").selectpicker('refresh');
+		}
+		});
+}
 
 $('.description').wysihtml5({
 	"font-styles": true, //Font styling, e.g. h1, h2, etc.
@@ -1441,30 +1602,67 @@ $(function () {
 				$('.toggleTime').css("display", "none")
 			}
 		}
-		//$('.loading-image').show();
-		var url = site_url+'admin/order/checkOrderInvitaion' 
-		 $.ajax({
-			'type': "POST",
-			'url': url,
-			'data': { order_id: id},
+		$('.loading-image').show();
+
+		//check driver assigned or not
+		if(order_type == 2){
+			checkDriverAssigned(id)
+		
+		}else{
+			
+			$('#changeStatusModal').modal('show')
+			$('.loading-image').hide();
+		}
+	
+	});
+
+	$('.remove-driver').on('click', function () { //open popup
+		var orderid = $(this).attr('data-id');
+		var driver_id = $(this).attr('driver-id');
+		$('.loading-image').show();
+		$.ajax({
+			url: site_url+"admin/order/assignedDriverDetail",
+			method:"POST",
+			'data': { orderid: orderid,driver_id:driver_id},
+			'dataType': 'html',
+			success: function (data) {
+				$('.loading-image').hide();
+				$('.appendRemoveDriver').html(data);
+				$('#removeDriverPopup').modal('show');
+			}
+		})
+		
+	});
+
+	$(document).on('click','.remove-driver-confirm', function () { //open popup
+		var order_id = $('#remove_driver_order_id').val();
+		var driver_id = $('#remove_driver_driver_id').val();
+		
+		$('.loading-image').show();
+		$.ajax({
+			url: site_url+"admin/order/removeDriver",
+			method:"POST",
+			'data': { order_id: order_id,driver_id:driver_id},
 			'dataType': 'json',
 			success: function (data) {
 				$('.loading-image').hide();
-				var user = data.data
-				user.forEach((entry) => {
-					//entry = JSON.stringify(entry)
-					var driver_user_id = entry['driver_user_id']
-					$("#driver option[value="+driver_user_id+"]").attr('disabled', 'disabled');
-				})
-				$(".selectpicker").selectpicker('refresh');
+				if(data.data == 1){
+					
+					$('#order_id_driver_'+order_id).css("display", "none")
+					$('#order_id_status_'+order_id).removeAttr("style")
+					$('#removeDriverPopup').modal('hide');
+					$('.msg_error_success').show()
+					$('.fixed_success').html('Driver has been successfully removed.')
 				
-				//$('.status_'+order_id).html(status)
+				}else{
+					$('.msg_error_success').hide()
+				}
+				
 			}
-		 });
-
-		$('#changeStatusModal').modal('show')
-	
+		})
+		
 	});
+
 
 	$('#new_status').on('change', function () {
 
@@ -1527,78 +1725,6 @@ $(function () {
 	
 	});
 
-	$( document ).on( "click", ".openTimePopup", function() {
-		$('.driverDropdown').css("display", "none")
-		var id = $(this).attr('data-id');
-		var user_id = $(this).attr('user-id');
-		var order_type = $(this).attr('data-order-type');
-		$('#time_order_id').val(id)
-		$('#time_user_id').val(user_id)
-		$('#time_order_type').val(order_type)
-		if(order_type==2){
-			$('.driverDropdown').removeAttr("style")
-		}
-		$('#acceptOrderTime').modal('show')
-	});
-
-	$('.submitAcceptOrderTime').on('click', function () {
-		var self = this;
-		var order_id = $('#time_order_id').val();
-		var user1 = $('#time_user_id').val();
-		var time_order_type = $('#time_order_type').val();
-		var delivery_time = $('#delivery_time').val();
-		var driver = (time_order_type==2)?$('#driver').val():'';
-		var new_status = 3;
-		var order_remark = '';
-		
-		if(delivery_time=='')
-		{
-			$('#delivery_time').addClass('form-control-danger');
-			$('#delivery_time').focus();
-			$('.delivery_time_error').html('Accepted for can\'t be blank.');
-			return false;
-		}else{
-			$('#delivery_time').addClass('form-control-success');
-			$('#delivery_time').removeClass('form-control-danger');
-			$('.delivery_time_error').html('');
-		}
-
-		var status ='<span class="badge badge-success">Accepted</span>';
-		var url = site_url+'admin/order/changeorderstatus' 
-		$('.loading-image').show();
-		$.ajax({
-			'type': "POST",
-			'url': url,
-			'data': { order_id: order_id, new_status: new_status,order_remark:order_remark ,user:user1,delivery_time:delivery_time,driver:driver},
-			'dataType': 'json',
-			success: function (data) {
-				$('.loading-image').hide();
-				$('.status_'+order_id).html(status)
-				if(new_status==3)
-				{
-					var id = order_id;
-					var user_id = user1;
-					$('.loading-image').show();
-					$.ajax({
-						url: site_url+"admin/order/orderDetailView",
-						method:"POST",
-						'data': { id: id,user_id:user_id,'type':'direct'},
-						'dataType': 'html',
-						success: function (data) {
-							$('.loading-image').hide();
-							$('.appendOrderDetail').html(data);
-							window.location.href = site_url+'admin/dashboard';
-						}
-					})
-				}else{
-					window.location.href = site_url+'admin/dashboard';
-					$.alert(data.msg);
-					
-				}
-			}
-		})
-	});
-
 	$('.submitStatus').on('click', function () {
 
 		var self = this;
@@ -1609,6 +1735,7 @@ $(function () {
 		var driver = (time_order_type==2)?$('#driver').val():[];
 		var new_status = $('#new_status').val();
 		var order_remark = $('#order_remark').val();
+		var popup_on = $('#popup_on').val();
 	
 		if(new_status=='')
 		{
@@ -1620,6 +1747,21 @@ $(function () {
 			$('#new_status').addClass('form-control-success');
 			$('#new_status').removeClass('form-control-danger');
 			$('.new_status_error').html('');
+		}
+
+		if(new_status==3 || new_status==11 || new_status==1){
+
+			if(delivery_time=='')
+			{
+				$('#delivery_time').addClass('form-control-danger');
+				$('#delivery_time').focus();
+				$('.delivery_time_error').html('Accepted for can\'t be blank.');
+				return false;
+			}else{
+				$('#delivery_time').addClass('form-control-success');
+				$('#delivery_time').removeClass('form-control-danger');
+				$('.delivery_time_error').html('');
+			}
 		}
 
 		if(new_status!=3 && new_status!=11 && new_status!=1){
@@ -1668,10 +1810,14 @@ $(function () {
 						'dataType': 'json',
 						success: function (data) {
 							$('.loading-image').hide();
-							$('#changeStatusModal').modal('hide')
-							$('#order_id_status_'+order_id).attr('current-status', new_status)
-							$('.status_'+order_id).html(status)
-							$.alert(data.msg);
+							if(popup_on=='new_order'){
+								window.location.href = site_url+'admin/dashboard';
+							}else{
+								$('#changeStatusModal').modal('hide')
+								$('#order_id_status_'+order_id).attr('current-status', new_status)
+								$('.status_'+order_id).html(status)
+								$.alert(data.msg);
+							}
 						}
 					});
 				},
